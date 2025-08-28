@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://cr6c1qrsan6ay"]
+[gd_scene load_steps=10 format=3 uid="uid://cr6c1qrsan6ay"]
 
 [ext_resource type="Script" uid="uid://ceg6sbsaa5b6f" path="res://examples/main.gd" id="1_26gv5"]
 [ext_resource type="PackedScene" uid="uid://cp2wvvpx0rprl" path="res://examples/attributes_initialization/attributes_initialization.tscn" id="2_oe2cu"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://curqgkv32cxfw" path="res://examples/attribute_buff_queue_execution/attribute_buff_queue_execution.tscn" id="6_xyviw"]
 [ext_resource type="PackedScene" uid="uid://c0gv10tax7leh" path="res://examples/transient_buff_execution_order/transient_buff_execution_order.tscn" id="7_plcr4"]
 [ext_resource type="PackedScene" uid="uid://d0gy5xejuwvvm" path="res://examples/manual_ticking/manual_ticking.tscn" id="8_avhjo"]
+[ext_resource type="PackedScene" uid="uid://cekqhsfyaxdm2" path="res://examples/advanced_attribute_buff_ticking_and_application/advanced_attribute_buff_ticking_and_application.tscn" id="9_03i7d"]
 
 [node name="Main" type="VBoxContainer"]
 anchors_preset = 15
@@ -16,7 +17,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_26gv5")
-examples = Array[PackedScene]([ExtResource("2_oe2cu"), ExtResource("3_pw243"), ExtResource("4_pw243"), ExtResource("5_w7hkg"), ExtResource("6_xyviw"), ExtResource("7_plcr4"), ExtResource("8_avhjo")])
+examples = Array[PackedScene]([ExtResource("2_oe2cu"), ExtResource("3_pw243"), ExtResource("4_pw243"), ExtResource("5_w7hkg"), ExtResource("6_xyviw"), ExtResource("7_plcr4"), ExtResource("8_avhjo"), ExtResource("9_03i7d")])
 
 [node name="Toolbar" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
