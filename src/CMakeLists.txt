@@ -19,6 +19,8 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES}
         attribute_container.hpp
         register_types.cpp
         register_types.hpp
+        attribute_buff.cpp
+        attribute_buff.h
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "src")

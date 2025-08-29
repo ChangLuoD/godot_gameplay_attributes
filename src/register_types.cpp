@@ -28,6 +28,7 @@
 /**************************************************************************/
 
 #include "attribute.hpp"
+#include "attribute_buff.h"
 #include "attribute_container.hpp"
 #include <godot_cpp/core/class_db.hpp>
 
@@ -40,6 +41,9 @@ void gdextension_initialize(ModuleInitializationLevel p_level)
 		/// attributes, resources and operations
 		ClassDB::register_class<AttributeOperation>();
 		ClassDB::register_abstract_class<AttributeBuffBase>();
+		ClassDB::register_class<AttributeChangeSetOperation>();
+		ClassDB::register_class<AttributeChangeSet>();
+		ClassDB::register_class<AttributeBuffContext>();
 		ClassDB::register_class<AttributeBuff>();
 		ClassDB::register_abstract_class<AttributeBase>();
 		ClassDB::register_class<Attribute>();
