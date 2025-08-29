@@ -29,14 +29,8 @@ extends AttributeBuff
 
 func _init(damage: float):
   self.damage = damage
-
-
-func _apply(context: AttributeBuffContext) -> void:
-  var changeset = context.new_changeset()
-  
-  changeset.operate(context.get_attribute(HealthAttribute.ATTRIBUTE_NAME), AttributeOperation.subtract(damage))
-  
-  context.commit(changeset)
+  attribute_name = HealthAttribute.ATTRIBUTE_NAME
+  operation = AttributeOperation.subtract(damage)
 ```
 
 Apply the buff to the `HealthAttribute` attribute like this:

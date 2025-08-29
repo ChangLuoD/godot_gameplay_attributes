@@ -112,47 +112,37 @@ extends AttributeBuff
 @export var max_experience_gained: float = 10.0     # Maximum experience gained from the buff
 
 
-func _applies_to(attribute_set: AttributeSet) -> Array[Attribute]:
-    return [
-        attribute_set.find_by_name(LevelAttribute.ATTRIBUTE_NAME),
-        attribute_set.find_by_name(ExperienceAttribute.ATTRIBUTE_NAME),
-        attribute_set.find_by_name(NextLevelExperienceAttribute.ATTRIBUTE_NAME),
-    ]
+func _init(_min_experience_gained: float, _max_experience_gained: float):
+    min_experience_gained = _min_experience_gained
+    max_experience_gained = _max_experience_gained
+
+
+func _apply(context: AttributeBuffContext) -> void:
+    var changeset = context.new_changeset()
     
-    
-func _operate(values: PackedFloatArray, attribute_set: AttributeSet) -> Array[AttributeOperation]:
-    var level                   := values[0]
-    var experience              := values[1]
-    var next_level_experience   := values[2]
+    ## we calculate the experience gained based on the exported values
     var exp_gained              := randf_range(min_experience_gained, max_experience_gained)
-    ## Let's calculate the new experience
-    var new_experience          := experience + exp_gained
-
-    ## Check if the character can levels up
-    if level == attribute_set.find_by_name(LevelAttribute.ATTRIBUTE_NAME).max_level:
-        # we add 0 level, experience and next level experience
-        return [
-            AttributeOperation.add(0), 
-            AttributeOperation.add(0),
-            AttributeOperation.add(0),
-        ]
-
-    var level_op: AttributeOperation    = AttributeOperation.add(0)
-    var experience_op: AttributeOperation = AttributeOperation.add(exp_gained)
-    var next_level_experience_op: AttributeOperation = AttributeOperation.add(0)
     
+    ## we retrieves a few attributes, we have to read some values first
+    var level_attribute         := context.get_attribute(LevelAttribute.ATTRIBUTE_NAME)
+    var experience              := context.get_attribute(ExperienceAttribute.ATTRIBUTE_NAME)
+    var next_level_experience   := context.get_attribute(NextLevelExperienceAttribute.ATTRIBUTE_NAME)
+    
+    ## if the level is equal to the max level exported by LevelAttribute, we do nothing
+    if level_attribute.get_value() == level_attribute.max_level:
+        return
+    
+    ## we compute the new experiece value
+    var new_experience          := exp_gained + experience.get_value()
+    
+    ## we have the new experience overflowing `next_level_experience`, it's a level up!
     if new_experience >= next_level_experience:
-        return [
-            AttributeOperation.add(1), ## level up!
-            AttributeOperation.add(new_experience - next_level_experience), ## remaining experience
-            next_level_experience_op, ## next level experience, 0 because it's automatically calculated by the derived attribute
-        ]
+        changeset.operate(LevelAttribute.ATTRIBUTE_NAME, AttributeOperation.add(1))
+        changeset.operate(ExperienceAttribute.ATTRIBUTE_NAME, AttributeOperation.add(new_experience - next_level_experience))
+    else:
+        changeset.operate(ExperienceAttribute.ATTRIBUTE_NAME, AttributeOperation.add(new_experience))
 
-    return [
-        level_op, 
-        experience_op,
-        next_level_experience_op,
-    ]
+    context.commit(changeset)
 ```
 
 Apply the buff and enjoy.
