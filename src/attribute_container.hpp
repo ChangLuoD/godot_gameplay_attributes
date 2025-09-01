@@ -11,6 +11,8 @@
 #ifndef OCTOD_GAMEPLAY_ATTRIBUTES_ATTRIBUTE_CONTAINER_H
 #define OCTOD_GAMEPLAY_ATTRIBUTES_ATTRIBUTE_CONTAINER_H
 
+#include "attribute_buff.h"
+
 #include <godot_cpp/classes/node.hpp>
 
 using namespace godot;
@@ -116,6 +118,10 @@ namespace octod::gameplay::attributes
 		Ref<AttributeSet> attribute_set;
 		/// @brief TypedArray of attributes.
 		Dictionary attributes;
+		/// @brief The attribute buff context.
+		Ref<AttributeBuffContext> buff_context;
+		/// @brief The dictionary storing the attribute values.
+		Dictionary attributes_values;
 		/// @brief Derived attributes. These are attributes that are calculated from other attributes.
 		Dictionary derived_attributes;
 		/// @brief If set to true, AttributeBuff durations are going to be handled by you.

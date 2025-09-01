@@ -39,14 +39,16 @@ void gdextension_initialize(ModuleInitializationLevel p_level)
 {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		/// attributes, resources and operations
-		ClassDB::register_class<AttributeOperation>();
-		ClassDB::register_abstract_class<AttributeBuffBase>();
-		ClassDB::register_class<AttributeChangeSetOperation>();
-		ClassDB::register_class<AttributeChangeSet>();
-		ClassDB::register_class<AttributeBuffContext>();
-		ClassDB::register_class<AttributeBuff>();
 		ClassDB::register_abstract_class<AttributeBase>();
+		ClassDB::register_abstract_class<AttributeBuffBase>();
+
 		ClassDB::register_class<Attribute>();
+		ClassDB::register_class<AttributeBuff>();
+		ClassDB::register_class<AttributeBuffContext>();
+		ClassDB::register_class<AttributeChangeSet>();
+		ClassDB::register_class<AttributeChangeSetOperation>();
+		ClassDB::register_class<AttributeDiff>();
+		ClassDB::register_class<AttributeOperation>();
 		ClassDB::register_class<AttributeSet>();
 		/// nodes
 		ClassDB::register_runtime_class<AttributeContainer>();

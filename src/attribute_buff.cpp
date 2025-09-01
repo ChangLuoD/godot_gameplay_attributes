@@ -1,12 +1,83 @@
-//
-// Created by lasagnaking on 8/29/25.
-//
+/**************************************************************************/
+/*  attribute_buff.cpp                                                    */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                        Godot Gameplay Systems                          */
+/*              https://github.com/OctoD/godot-gameplay-systems           */
+/**************************************************************************/
+/* Read the license file in this repo.						              */
+/**************************************************************************/
 
 #include "attribute_buff.h"
 #include "attribute.hpp"
 #include "attribute_container.hpp"
 
 using namespace octod::gameplay::attributes;
+
+bool AttributeDiff::did_change() const
+{
+	return Math::is_equal_approx(current, previous);
+}
+
+float AttributeDiff::get_buff() const
+{
+	return buff;
+}
+
+float AttributeDiff::get_previous_buff() const
+{
+	return previous_buff;
+}
+
+void AttributeDiff::set_buff(const float p_buff)
+{
+	buff = p_buff;
+}
+
+void AttributeDiff::set_previous_buff(const float p_previous_buff)
+{
+	previous_buff = p_previous_buff;
+}
+
+float AttributeDiff::get_current() const
+{
+	return current;
+}
+
+float AttributeDiff::get_previous() const
+{
+	return previous;
+}
+
+void AttributeDiff::set_current(const float p_current)
+{
+	current = p_current;
+}
+
+void AttributeDiff::set_previous(const float p_previous)
+{
+	previous = p_previous;
+}
+
+void AttributeDiff::_bind_methods()
+{
+	/// binds methods to godot
+	ClassDB::bind_method(D_METHOD("did_change"), &AttributeDiff::did_change);
+	ClassDB::bind_method(D_METHOD("get_buff"), &AttributeDiff::get_buff);
+	ClassDB::bind_method(D_METHOD("get_current"), &AttributeDiff::get_current);
+	ClassDB::bind_method(D_METHOD("get_previous"), &AttributeDiff::get_previous);
+	ClassDB::bind_method(D_METHOD("get_previous_buff"), &AttributeDiff::get_previous_buff);
+	ClassDB::bind_method(D_METHOD("set_buff", "buff"), &AttributeDiff::set_buff);
+	ClassDB::bind_method(D_METHOD("set_current", "current"), &AttributeDiff::set_current);
+	ClassDB::bind_method(D_METHOD("set_previous", "previous"), &AttributeDiff::set_previous);
+	ClassDB::bind_method(D_METHOD("set_previous_buff", "previous_buff"), &AttributeDiff::set_previous_buff);
+
+	/// binds properties to godot
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "buff"), "set_buff", "get_buff");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "current"), "set_current", "get_current");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous"), "set_previous", "get_previous");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous_buff"), "set_previous_buff", "get_previous_buff");
+}
 
 float AttributeChangeSetOperation::get_resulting_value() const
 {
@@ -27,10 +98,17 @@ void AttributeChangeSetOperation::reset_duration(const bool p_resets_duration)
 	resets_duration = p_resets_duration;
 }
 
-void AttributeChangeSetOperation::set_duration(const float p_duration, int p_unit_of_measure)
+void AttributeChangeSetOperation::set_duration(const float p_duration, int p_tick_type)
 {
 	duration = p_duration;
-	unit_of_measure = static_cast<AttributeChangeSetOperationUnitOfMeasure>(p_unit_of_measure);
+	tick_type = static_cast<AttributeChangeSetOperationTickType>(p_tick_type);
+	transient_operation = !Math::is_zero_approx(p_duration);
+}
+
+void AttributeChangeSetOperation::set_transient(const bool p_transient)
+{
+	ERR_FAIL_COND_MSG(!Math::is_zero_approx(duration) && !p_transient, "Cannot mark this operation as not transient if its duration is is not 0.0.");
+	transient_operation = p_transient;
 }
 
 void AttributeChangeSetOperation::_bind_methods()
@@ -39,7 +117,13 @@ void AttributeChangeSetOperation::_bind_methods()
 	ClassDB::bind_method(D_METHOD("get_resulting_value"), &AttributeChangeSetOperation::get_resulting_value);
 	ClassDB::bind_method(D_METHOD("reapply_every_tick", "reapplies_every_tick"), &AttributeChangeSetOperation::reapply_every_tick);
 	ClassDB::bind_method(D_METHOD("reset_duration", "resets_duration"), &AttributeChangeSetOperation::reset_duration);
-	ClassDB::bind_method(D_METHOD("set_duration", "duration", "unit_of_measure"), &AttributeChangeSetOperation::set_duration, DEFVAL(UOM_MILLISECOND));
+	ClassDB::bind_method(D_METHOD("set_duration", "duration", "unit_of_measure"), &AttributeChangeSetOperation::set_duration, DEFVAL(TICK_MILLISECOND));
+	ClassDB::bind_method(D_METHOD("set_transient", "transient"), &AttributeChangeSetOperation::set_transient);
+}
+
+PackedStringArray AttributeChangeSet::get_affected_attributes() const
+{
+	return operations.keys();
 }
 
 TypedArray<AttributeChangeSetOperation> AttributeChangeSet::get_operations() const
@@ -57,6 +141,23 @@ bool AttributeChangeSet::is_operating_attribute(const String &p_attribute_name) 
 	return operations.has(p_attribute_name);
 }
 
+TypedArray<AttributeDiff> AttributeChangeSet::prepare_diff() const
+{
+	TypedArray<AttributeDiff> diff;
+	PackedStringArray affected_attributes = get_affected_attributes();
+
+	for (int i = 0; i < affected_attributes.size(); i++) {
+		const String &attribute_name = affected_attributes[i];
+		Ref<AttributeDiff> attribute_diff;
+		attribute_diff.instantiate();
+
+		attribute_diff->set_current(attribute_buff_context->get_attribute(attribute_name)->get_value());
+		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
+	}
+
+	return diff;
+}
+
 Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_attribute_name, AttributeOperation *p_attribute_operation)
 {
 	Ref<AttributeChangeSetOperation> attribute_change_set_operation;
@@ -67,6 +168,7 @@ Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_att
 	attribute_change_set_operation.instantiate();
 
 	attribute_change_set_operation->attribute_operation = p_attribute_operation;
+	attribute_change_set_operation->change_set = this;
 	attribute_change_set_operation->runtime_attribute = attribute_buff_context->attribute_container->get_runtime_attribute_by_name(p_attribute_name).ptr();
 
 	operations.set(p_attribute_name, attribute_change_set_operation);
@@ -86,14 +188,17 @@ void AttributeChangeSet::_bind_methods()
 void AttributeBuffContext::commit(const Ref<AttributeChangeSet> &p_changeset)
 {
 	ERR_FAIL_COND_MSG(p_changeset.is_null(), "This AttributeChangeSet is null");
+
+	pending_diffs.append(p_changeset->prepare_diff());
+
 	committed_changesets.append(p_changeset);
 }
 
-void AttributeBuffContext::commit_transient(const Ref<AttributeChangeSet> &p_changeset)
+Dictionary AttributeBuffContext::get_diff() const
 {
-	ERR_FAIL_COND_MSG(p_changeset.is_null(), "This AttributeChangeSet is null");
-	p_changeset->transient_change_set = true;
-	committed_changesets.append(p_changeset);
+	Dictionary attributes_diff;
+
+	return attributes_diff;
 }
 
 RuntimeAttribute *AttributeBuffContext::get_attribute(const String &p_attribute_name) const
@@ -127,6 +232,10 @@ bool AttributeBuffContext::has_changeset(const String &p_changeset_name) const
 	return false;
 }
 
+void AttributeBuffContext::merge()
+{
+}
+
 Ref<AttributeChangeSet> AttributeBuffContext::new_changeset(const String &p_changeset_name)
 {
 	Ref<AttributeChangeSet> retval;
@@ -140,6 +249,7 @@ Ref<AttributeChangeSet> AttributeBuffContext::new_changeset(const String &p_chan
 
 void AttributeBuffContext::rollback(String p_changeset_name)
 {
+	ERR_FAIL_NULL_MSG(attribute_container, "AttributeContainer is null, cannot rollback. This is probably due to a manual instantiation of AttributeBuffContext.");
 	/// todo: we need to store changesets on the container first before rolling them back
 }
 
@@ -151,7 +261,6 @@ void AttributeBuffContext::set_attribute_container(AttributeContainer *p_contain
 void AttributeBuffContext::_bind_methods()
 {
 	ClassDB::bind_method(D_METHOD("commit", "changeset"), &AttributeBuffContext::commit);
-	ClassDB::bind_method(D_METHOD("commit_transient", "changeset"), &AttributeBuffContext::commit_transient);
 	ClassDB::bind_method(D_METHOD("get_attribute", "attribute_name"), &AttributeBuffContext::get_attribute);
 	ClassDB::bind_method(D_METHOD("has_attribute", "attribute_name"), &AttributeBuffContext::has_attribute);
 	ClassDB::bind_method(D_METHOD("has_changeset", "changeset_name"), &AttributeBuffContext::has_changeset);

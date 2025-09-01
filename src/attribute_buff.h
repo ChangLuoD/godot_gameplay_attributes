@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  attribute_buff.hpp                                                    */
+/*  attribute_buff.h                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                        Godot Gameplay Systems                          */
@@ -18,15 +18,44 @@ using namespace godot;
 namespace octod::gameplay::attributes
 {
 	class AttributeBuffContext;
+	class AttributeChangeSet;
 	class AttributeContainer;
 	class AttributeOperation;
 	class RuntimeAttribute;
 
-	enum AttributeChangeSetOperationUnitOfMeasure : uint8_t
+	class AttributeDiff final : public RefCounted
 	{
-		UOM_MILLISECOND = 0,
-		UOM_SECOND = 1,
-		UOM_MINUTE = 2,
+		GDCLASS(AttributeDiff, RefCounted)
+
+	public:
+		[[nodiscard]] bool did_change() const;
+
+		[[nodiscard]] float get_buff() const;
+
+		[[nodiscard]] float get_current() const;
+
+		[[nodiscard]] float get_previous() const;
+
+		[[nodiscard]] float get_previous_buff() const;
+
+		void set_buff(float p_buff);
+
+		void set_current(float p_current);
+
+		void set_previous(float p_previous);
+
+		void set_previous_buff(float p_previous_buff);
+
+	protected:
+		static void _bind_methods();
+
+		float buff = 0.0f;
+
+		float current = 0.0f;
+
+		float previous = 0.0f;
+
+		float previous_buff = 0.0f;
 	};
 
 	class AttributeChangeSetOperation final : public RefCounted
@@ -34,30 +63,45 @@ namespace octod::gameplay::attributes
 		GDCLASS(AttributeChangeSetOperation, RefCounted)
 
 	public:
+		enum AttributeChangeSetOperationTickType : uint8_t
+		{
+			TICK_MILLISECOND = 0,
+			TICK_SECOND = 1,
+			TICK_MINUTE = 2,
+		};
+
 		[[nodiscard]] float get_resulting_value() const;
 
 		void reapply_every_tick(bool p_reapplies_every_tick);
 
 		void reset_duration(bool p_resets_duration);
 
-		void set_duration(float p_duration, int p_unit_of_measure = UOM_MILLISECOND);
+		void set_duration(float p_duration, int p_tick_type = TICK_MILLISECOND);
+
+		void set_transient(bool p_transient);
 
 	protected:
 		friend class AttributeChangeSet;
+		friend class AttributeOperation;
+		friend class AttributeBuffContext;
 
 		static void _bind_methods();
 
 		AttributeOperation *attribute_operation = nullptr;
 
+		AttributeChangeSet *change_set = nullptr;
+
+		float duration = 0.0;
+
 		bool reapplies_every_tick = false;
 
 		bool resets_duration = false;
 
-		float duration = 0.0;
-
 		RuntimeAttribute *runtime_attribute = nullptr;
 
-		AttributeChangeSetOperationUnitOfMeasure unit_of_measure = UOM_MILLISECOND;
+		AttributeChangeSetOperationTickType tick_type = TICK_MILLISECOND;
+
+		bool transient_operation = false;
 	};
 
 	class AttributeChangeSet final : public RefCounted
@@ -65,16 +109,21 @@ namespace octod::gameplay::attributes
 		GDCLASS(AttributeChangeSet, RefCounted)
 
 	public:
+		[[nodiscard]] PackedStringArray get_affected_attributes() const;
+
 		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_operations() const;
 
 		[[nodiscard]] bool has_operations() const;
 
 		[[nodiscard]] bool is_operating_attribute(const String &p_attribute_name) const;
 
+		TypedArray<AttributeDiff> prepare_diff() const;
+
 		Ref<AttributeChangeSetOperation> operate(const String &p_attribute_name, AttributeOperation *p_attribute_operation);
 
 	protected:
 		friend class AttributeBuffContext;
+		friend class AttributeChangeSetOperation;
 
 		static void _bind_methods();
 
@@ -82,9 +131,8 @@ namespace octod::gameplay::attributes
 
 		String change_set_name;
 
+		/// @brief A dictionary where the key is the attribute name and the value is an instance of AttributeChangeSetOperation
 		Dictionary operations;
-
-		bool transient_change_set = false;
 	};
 
 	class AttributeBuffContext final : public RefCounted
@@ -94,13 +142,17 @@ namespace octod::gameplay::attributes
 	public:
 		void commit(const Ref<AttributeChangeSet> &p_changeset);
 
-		void commit_transient(const Ref<AttributeChangeSet> &p_changeset);
+		/// @brief Returns a Dictionary where the key is the attribute name, and the value is an instance of AttributeDiff
+		[[nodiscard]] Dictionary get_diff() const;
 
-		RuntimeAttribute *get_attribute(const String &p_attribute_name) const;
+		[[nodiscard]] RuntimeAttribute *get_attribute(const String &p_attribute_name) const;
 
 		[[nodiscard]] bool has_attribute(const String &p_attribute_name) const;
 
 		[[nodiscard]] bool has_changeset(const String &p_changeset_name) const;
+
+		/// @brief merges current diffs into the container.
+		void merge();
 
 		Ref<AttributeChangeSet> new_changeset(const String &p_changeset_name = "");
 
@@ -109,6 +161,7 @@ namespace octod::gameplay::attributes
 		void set_attribute_container(AttributeContainer *p_container);
 
 	protected:
+		friend class AttributeChangeSetOperation;
 		friend class AttributeChangeSet;
 
 		static void _bind_methods();
@@ -116,9 +169,11 @@ namespace octod::gameplay::attributes
 		AttributeContainer *attribute_container = nullptr;
 
 		TypedArray<AttributeChangeSet> committed_changesets;
+
+		TypedArray<AttributeDiff> pending_diffs;
 	};
 } //namespace octod::gameplay::attributes
 
-VARIANT_ENUM_CAST(octod::gameplay::attributes::AttributeChangeSetOperationUnitOfMeasure)
+VARIANT_ENUM_CAST(octod::gameplay::attributes::AttributeChangeSetOperation::AttributeChangeSetOperationTickType)
 
 #endif

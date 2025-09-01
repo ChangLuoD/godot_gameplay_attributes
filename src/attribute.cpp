@@ -195,6 +195,30 @@ void AttributeBuff::_bind_methods()
 	BIND_ENUM_CONSTANT(QUEUE_EXECUTION_WATERFALL)
 }
 
+void AttributeBuff::apply(AttributeBuffContext *context)
+{
+	ERR_FAIL_NULL_MSG(context, "Cannot apply AttributeBuff, AttributeBuffContext is null.");
+
+	if (GDVIRTUAL_IS_OVERRIDDEN(_apply)) {
+		GDVIRTUAL_CALL(_apply, context);
+	}
+
+	if (!context->has_attribute(attribute_name)) {
+		return;
+	}
+
+	const Ref changeset = context->new_changeset(attribute_name);
+
+	changeset->operate(attribute_name, operation.ptr())->set_duration(duration);
+
+	context->commit(changeset);
+}
+
+bool AttributeBuff::is_apply_overridden() const
+{
+	return GDVIRTUAL_IS_OVERRIDDEN(_apply);
+}
+
 bool AttributeBuff::equals_to(const Ref<AttributeBuff> &buff) const
 {
 	if (buff == nullptr) {
@@ -204,7 +228,7 @@ bool AttributeBuff::equals_to(const Ref<AttributeBuff> &buff) const
 	ERR_FAIL_COND_V_MSG(buff.is_null(), false, "Cannot compare to null AttributeBuff. This is a bug, please report it.");
 
 	return (
-			Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
+		Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
 }
 
 float AttributeBuff::operate(const float base_value) const
@@ -374,6 +398,7 @@ void AttributeComputationArgument::set_runtime_attribute(RuntimeAttribute *p_run
 {
 	runtime_attribute = p_runtime_attribute;
 }
+
 void AttributeComputationArgument::set_attribute_container(AttributeContainer *p_attribute_container)
 {
 	attribute_container = p_attribute_container;
@@ -943,6 +968,7 @@ bool RuntimeAttribute::has_ongoing_buffs() const
 
 	return false;
 }
+
 bool RuntimeAttribute::is_computable() const
 {
 	return GDVIRTUAL_IS_OVERRIDDEN_PTR(attribute, _compute_value);
@@ -969,6 +995,11 @@ Ref<Attribute> RuntimeAttribute::get_attribute() const
 Ref<AttributeSet> RuntimeAttribute::get_attribute_set() const
 {
 	return attribute_set;
+}
+
+float RuntimeAttribute::get_buff() const
+{
+	return buff_value;
 }
 
 float RuntimeAttribute::get_buffed_value() const

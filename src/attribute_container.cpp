@@ -170,6 +170,7 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff)
 	ERR_FAIL_NULL_MSG(p_buff, "Buff cannot be null, it must be an instance of a class inheriting from AttributeBuff abstract class.");
 
 	if (p_buff->is_operate_overridden()) {
+		/// disclaimer: this is going to be removed in the future for the sake of simplicity.
 		TypedArray<AttributeBase> _attributes;
 		TypedArray<RuntimeAttribute> _affected_runtime_attributes;
 		TypedArray<float> buffed_values;
@@ -217,14 +218,7 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff)
 			}
 		}
 	} else {
-		const Ref<RuntimeAttribute> runtime_attribute = get_runtime_attribute_by_name(p_buff->get_attribute_name());
-
-		ERR_FAIL_COND_MSG(!runtime_attribute.is_valid(), "Attribute '" + p_buff->get_attribute_name() + "' not found in the container.");
-		ERR_FAIL_COND_MSG(runtime_attribute.is_null(), "Attribute reference is not valid.");
-
-		if (Ref<RuntimeBuff> latest_runtime_buff_applied = runtime_attribute->add_buff(p_buff); latest_runtime_buff_applied.is_valid() && p_buff->get_transient() && !Math::is_zero_approx(p_buff->get_duration())) {
-			emit_signal("buff_enqueued", latest_runtime_buff_applied);
-		}
+		p_buff->apply(buff_context.ptr());
 	}
 }
 

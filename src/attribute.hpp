@@ -15,6 +15,7 @@
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/gdvirtual.gen.inc>
+#include "attribute_buff.h"
 
 using namespace godot;
 
@@ -190,6 +191,8 @@ namespace octod::gameplay::attributes
 		GDCLASS(AttributeBuffBase, Resource);
 
 	public:
+
+		GDVIRTUAL1(_apply, AttributeBuffContext*);
 		/// @brief Changes which attributes the buff applies to.
 		GDVIRTUAL1RC(TypedArray<AttributeBase>, _applies_to, Ref<AttributeSet>); // NOLINT(*-unnecessary-value-param)
 		/// @brief Changes the operation to apply. If overridden, an array of AttributeOperation must be returned. This will skip the operation property.
@@ -228,6 +231,10 @@ namespace octod::gameplay::attributes
 			// as the previous finished
 			QUEUE_EXECUTION_WATERFALL,
 		};
+
+		void apply(AttributeBuffContext *context);
+
+		[[nodiscard]] bool is_apply_overridden() const;
 
 		/// @brief Checks if the buff is equal to another buff.
 		/// @return True if the buff is equal, false otherwise.
@@ -562,6 +569,10 @@ namespace octod::gameplay::attributes
 		/// @return The attribute set.
 		[[nodiscard]] Ref<AttributeSet> get_attribute_set() const;
 
+		/// @brief Gets the transient buff for this attribute.
+		/// @return The buff value;
+		[[nodiscard]] float get_buff() const;
+
 		/// @brief Get the buffed value of the attribute.
 		/// @return The buffed value.
 		[[nodiscard]] float get_buffed_value() const;
@@ -604,6 +615,8 @@ namespace octod::gameplay::attributes
 		Ref<AttributeSet> attribute_set;
 		/// @brief The attribute container reference.
 		AttributeContainer *attribute_container;
+		/// @brief This is the amount of x attribute that is added/removed from value.
+		float buff_value = 0.0f;
 		/// @brief The previous value of the attribute.
 		float previous_value = 0.0f;
 		/// @brief The attribute value.

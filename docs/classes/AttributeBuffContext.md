@@ -14,10 +14,6 @@ triggering signals, starting buff life-cycles, etc.
 > the system understands if a changeset is transient or not by itself, and by itself I mean if you specify a name
 > to a changeset or you set a time, the system will presume it is transient.
 
-#### commit_transient
-
-Same as `commit`, but the changeset is forcefully marked as transient. (Just in case you forgot to or the system is bugg-ehm).
-
 #### get_attribute
 
 Gets a [`RuntimeAttribute`](./RuntimeAttribute.md) instance from the container.
