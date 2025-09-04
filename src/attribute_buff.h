@@ -23,11 +23,13 @@ namespace octod::gameplay::attributes
 	class AttributeOperation;
 	class RuntimeAttribute;
 
-	class AttributeDiff final : public RefCounted
+	class AttributeDiff : public RefCounted
 	{
 		GDCLASS(AttributeDiff, RefCounted)
 
 	public:
+		String attribute_name;
+
 		[[nodiscard]] bool did_change() const;
 
 		[[nodiscard]] float get_buff() const;
@@ -109,6 +111,8 @@ namespace octod::gameplay::attributes
 		GDCLASS(AttributeChangeSet, RefCounted)
 
 	public:
+		void clear_persistent_operations();
+
 		[[nodiscard]] PackedStringArray get_affected_attributes() const;
 
 		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_operations() const;
@@ -117,7 +121,7 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] bool is_operating_attribute(const String &p_attribute_name) const;
 
-		TypedArray<AttributeDiff> prepare_diff() const;
+		[[nodiscard]] Dictionary prepare_diff() const;
 
 		Ref<AttributeChangeSetOperation> operate(const String &p_attribute_name, AttributeOperation *p_attribute_operation);
 
@@ -156,7 +160,9 @@ namespace octod::gameplay::attributes
 
 		Ref<AttributeChangeSet> new_changeset(const String &p_changeset_name = "");
 
-		void rollback(String p_changeset_name);
+		void notify_attributes_container();
+
+		void rollback(const String &p_changeset_name);
 
 		void set_attribute_container(AttributeContainer *p_container);
 
@@ -170,7 +176,7 @@ namespace octod::gameplay::attributes
 
 		TypedArray<AttributeChangeSet> committed_changesets;
 
-		TypedArray<AttributeDiff> pending_diffs;
+		TypedArray<AttributeDiff> diffs_to_notify;
 	};
 } //namespace octod::gameplay::attributes
 

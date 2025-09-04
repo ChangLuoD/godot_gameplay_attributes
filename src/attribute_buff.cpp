@@ -121,6 +121,15 @@ void AttributeChangeSetOperation::_bind_methods()
 	ClassDB::bind_method(D_METHOD("set_transient", "transient"), &AttributeChangeSetOperation::set_transient);
 }
 
+void AttributeChangeSet::clear_persistent_operations()
+{
+	for (int64_t i = operations.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !operation->transient_operation) {
+			operations.erase(i);
+		}
+	}
+}
+
 PackedStringArray AttributeChangeSet::get_affected_attributes() const
 {
 	return operations.keys();
@@ -141,17 +150,48 @@ bool AttributeChangeSet::is_operating_attribute(const String &p_attribute_name) 
 	return operations.has(p_attribute_name);
 }
 
-TypedArray<AttributeDiff> AttributeChangeSet::prepare_diff() const
+Dictionary AttributeChangeSet::prepare_diff() const
 {
-	TypedArray<AttributeDiff> diff;
+	Dictionary diff;
 	PackedStringArray affected_attributes = get_affected_attributes();
 
 	for (int i = 0; i < affected_attributes.size(); i++) {
 		const String &attribute_name = affected_attributes[i];
+		const Ref<AttributeChangeSetOperation> operation = operations[attribute_name];
 		Ref<AttributeDiff> attribute_diff;
 		attribute_diff.instantiate();
+		diff.set(attribute_name, attribute_diff);
 
-		attribute_diff->set_current(attribute_buff_context->get_attribute(attribute_name)->get_value());
+		float permanent_additive_buff = 0.0;
+		float permanent_multiplicative_buff = 1.0;
+		float transient_additive_buff = 0.0;
+		float transient_multiplicative_buff = 1.0;
+
+		switch (operation->attribute_operation->get_operand()) {
+			case OP_ADD:
+			case OP_SUBTRACT:
+				if (operation->transient_operation) {
+					transient_additive_buff = operation->attribute_operation->operate(transient_additive_buff);
+				} else {
+					permanent_additive_buff = operation->attribute_operation->operate(permanent_additive_buff);
+				}
+				break;
+			case OP_MULTIPLY:
+			case OP_DIVIDE:
+			case OP_PERCENTAGE:
+				if (operation->transient_operation) {
+					transient_multiplicative_buff = operation->attribute_operation->operate(transient_multiplicative_buff);
+				} else {
+					permanent_multiplicative_buff = operation->attribute_operation->operate(permanent_multiplicative_buff);
+				}
+				break;
+			default:
+				break;
+		}
+
+		attribute_diff->set_buff(transient_additive_buff + (operation->runtime_attribute->get_value() * transient_multiplicative_buff));
+		attribute_diff->set_current((permanent_additive_buff * permanent_multiplicative_buff));
+		attribute_diff->set_previous(attribute_buff_context->get_attribute(attribute_name)->get_value());
 		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
 	}
 
@@ -189,7 +229,10 @@ void AttributeBuffContext::commit(const Ref<AttributeChangeSet> &p_changeset)
 {
 	ERR_FAIL_COND_MSG(p_changeset.is_null(), "This AttributeChangeSet is null");
 
-	pending_diffs.append(p_changeset->prepare_diff());
+	if (!p_changeset->has_operations()) {
+		WARN_PRINT("This AttributeChangeSet was discarded since it has no operations to commit.");
+		return;
+	}
 
 	committed_changesets.append(p_changeset);
 }
@@ -197,6 +240,24 @@ void AttributeBuffContext::commit(const Ref<AttributeChangeSet> &p_changeset)
 Dictionary AttributeBuffContext::get_diff() const
 {
 	Dictionary attributes_diff;
+
+	for (int i = 0; i < committed_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+		const Dictionary &changeset_diff = changeset->prepare_diff();
+
+		PackedStringArray affected_attributes = changeset_diff.keys();
+
+		for (int j = 0; j < affected_attributes.size(); j++) {
+			const String &attribute_name = affected_attributes[j];
+			const Ref<AttributeDiff> attribute_diff = changeset_diff[attribute_name];
+			const Ref<AttributeDiff> stored_attribute_diff = attributes_diff.get_or_add(attribute_name, attribute_diff);
+
+			if (i > 0) {
+				stored_attribute_diff->set_buff(stored_attribute_diff->get_buff() + attribute_diff->get_buff());
+				stored_attribute_diff->set_current(stored_attribute_diff->get_current() + attribute_diff->get_current());
+			}
+		}
+	}
 
 	return attributes_diff;
 }
@@ -234,6 +295,34 @@ bool AttributeBuffContext::has_changeset(const String &p_changeset_name) const
 
 void AttributeBuffContext::merge()
 {
+	ERR_FAIL_NULL_MSG(attribute_container, "AttributeContainer is null, cannot merge commits. This is probably due to a manual instantiation of AttributeBuffContext.");
+
+	const Dictionary &diff = get_diff();
+	PackedStringArray affected_attributes = diff.keys();
+
+	for (int i = 0; i < affected_attributes.size(); i++) {
+		const String &attribute_name = affected_attributes[i];
+		const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
+		const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
+
+		runtime_attribute->set_buff(attribute_diff->get_buff());
+		runtime_attribute->set_value(attribute_diff->get_current());
+
+		attribute_diff->attribute_name = attribute_name;
+
+		diffs_to_notify.push_back(attribute_diff);
+	}
+
+	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
+		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+		changeset->clear_persistent_operations();
+
+		if (!changeset->has_operations()) {
+			committed_changesets.erase(i);
+		}
+	}
+
+	notify_attributes_container();
 }
 
 Ref<AttributeChangeSet> AttributeBuffContext::new_changeset(const String &p_changeset_name)
@@ -247,10 +336,36 @@ Ref<AttributeChangeSet> AttributeBuffContext::new_changeset(const String &p_chan
 	return retval;
 }
 
-void AttributeBuffContext::rollback(String p_changeset_name)
+void AttributeBuffContext::notify_attributes_container()
+{
+	for (int i = 0; i < diffs_to_notify.size(); i++) {
+		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
+			Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_diff->attribute_name);
+
+			attribute_container->emit_signal(
+					"attribute_changed",
+					runtime_attribute,
+					attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
+					attribute_diff->get_current() + attribute_diff->get_buff()
+					);
+		}
+	}
+
+	diffs_to_notify.clear();
+}
+
+void AttributeBuffContext::rollback(const String &p_changeset_name)
 {
 	ERR_FAIL_NULL_MSG(attribute_container, "AttributeContainer is null, cannot rollback. This is probably due to a manual instantiation of AttributeBuffContext.");
-	/// todo: we need to store changesets on the container first before rolling them back
+
+	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->change_set_name == p_changeset_name) {
+			committed_changesets.erase(i);
+			break;
+		}
+	}
+
+	merge();
 }
 
 void AttributeBuffContext::set_attribute_container(AttributeContainer *p_container)

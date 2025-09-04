@@ -781,38 +781,6 @@ void RuntimeBuff::set_time_left(const float p_value)
 
 #pragma region RuntimeAttributeBase
 
-void RuntimeAttribute::_bind_methods()
-{
-	/// binds methods to godot
-	ClassDB::bind_method(D_METHOD("add_buff", "p_buff"), &RuntimeAttribute::add_buff);
-	ClassDB::bind_method(D_METHOD("can_receive_buff", "p_buff"), &RuntimeAttribute::can_receive_buff);
-	ClassDB::bind_method(D_METHOD("clear_buffs"), &RuntimeAttribute::clear_buffs);
-	ClassDB::bind_method(D_METHOD("get_attribute"), &RuntimeAttribute::get_attribute);
-	ClassDB::bind_method(D_METHOD("get_attribute_name"), &RuntimeAttribute::get_attribute_name);
-	ClassDB::bind_method(D_METHOD("get_attribute_set"), &RuntimeAttribute::get_attribute_set);
-	ClassDB::bind_method(D_METHOD("get_buffed_value"), &RuntimeAttribute::get_buffed_value);
-	ClassDB::bind_method(D_METHOD("get_buffs"), &RuntimeAttribute::get_buffs);
-	ClassDB::bind_method(D_METHOD("get_derived_from"), &RuntimeAttribute::get_derived_from);
-	ClassDB::bind_method(D_METHOD("get_parent_runtime_attributes"), &RuntimeAttribute::get_parent_runtime_attributes);
-	ClassDB::bind_method(D_METHOD("get_value"), &RuntimeAttribute::get_value);
-	ClassDB::bind_method(D_METHOD("has_ongoing_buffs"), &RuntimeAttribute::has_ongoing_buffs);
-	ClassDB::bind_method(D_METHOD("remove_buff", "p_buff"), &RuntimeAttribute::remove_buff);
-	ClassDB::bind_method(D_METHOD("set_attribute", "p_value"), &RuntimeAttribute::set_attribute);
-	ClassDB::bind_method(D_METHOD("set_attribute_set", "p_value"), &RuntimeAttribute::set_attribute_set);
-	ClassDB::bind_method(D_METHOD("set_value", "p_value"), &RuntimeAttribute::set_value);
-
-	/// binds properties to godot
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "attribute", PROPERTY_HINT_RESOURCE_TYPE, "AttributeBase"), "set_attribute", "get_attribute");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "value"), "set_value", "get_value");
-
-	/// adds signals to godot
-	ADD_SIGNAL(MethodInfo("attribute_changed", PropertyInfo(Variant::OBJECT, "attribute", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeAttributeBase"), PropertyInfo(Variant::FLOAT, "previous_value"), PropertyInfo(Variant::FLOAT, "new_value")));
-	ADD_SIGNAL(MethodInfo("buff_added", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
-	ADD_SIGNAL(MethodInfo("buff_removed", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
-	ADD_SIGNAL(MethodInfo("buff_time_updated", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
-	ADD_SIGNAL(MethodInfo("buffs_cleared"));
-}
-
 Ref<RuntimeBuff> RuntimeAttribute::add_buff(const Ref<AttributeBuff> &p_buff)
 {
 	Ref<RuntimeBuff> runtime_buff;
@@ -1061,15 +1029,55 @@ void RuntimeAttribute::set_attribute(const Ref<AttributeBase> &p_value)
 	attribute = p_value;
 }
 
+void RuntimeAttribute::set_attribute_set(const Ref<AttributeSet> &p_value)
+{
+	attribute_set = p_value;
+}
+
+void RuntimeAttribute::set_buff(const float p_value)
+{
+	buff_value = p_value;
+}
+
 void RuntimeAttribute::set_value(const float p_value)
 {
 	previous_value = value;
 	value = p_value;
 }
 
-void RuntimeAttribute::set_attribute_set(const Ref<AttributeSet> &p_value)
+void RuntimeAttribute::_bind_methods()
 {
-	attribute_set = p_value;
+	/// binds methods to godot
+	ClassDB::bind_method(D_METHOD("add_buff", "p_buff"), &RuntimeAttribute::add_buff);
+	ClassDB::bind_method(D_METHOD("can_receive_buff", "p_buff"), &RuntimeAttribute::can_receive_buff);
+	ClassDB::bind_method(D_METHOD("clear_buffs"), &RuntimeAttribute::clear_buffs);
+	ClassDB::bind_method(D_METHOD("get_attribute"), &RuntimeAttribute::get_attribute);
+	ClassDB::bind_method(D_METHOD("get_attribute_name"), &RuntimeAttribute::get_attribute_name);
+	ClassDB::bind_method(D_METHOD("get_attribute_set"), &RuntimeAttribute::get_attribute_set);
+	ClassDB::bind_method(D_METHOD("get_buffed_value"), &RuntimeAttribute::get_buffed_value);
+	ClassDB::bind_method(D_METHOD("get_buff"), &RuntimeAttribute::get_buff);
+	ClassDB::bind_method(D_METHOD("get_buffs"), &RuntimeAttribute::get_buffs);
+	ClassDB::bind_method(D_METHOD("get_derived_from"), &RuntimeAttribute::get_derived_from);
+	ClassDB::bind_method(D_METHOD("get_parent_runtime_attributes"), &RuntimeAttribute::get_parent_runtime_attributes);
+	ClassDB::bind_method(D_METHOD("get_value"), &RuntimeAttribute::get_value);
+	ClassDB::bind_method(D_METHOD("has_ongoing_buffs"), &RuntimeAttribute::has_ongoing_buffs);
+	ClassDB::bind_method(D_METHOD("remove_buff", "p_buff"), &RuntimeAttribute::remove_buff);
+	ClassDB::bind_method(D_METHOD("set_attribute", "p_value"), &RuntimeAttribute::set_attribute);
+	ClassDB::bind_method(D_METHOD("set_attribute_set", "p_value"), &RuntimeAttribute::set_attribute_set);
+	ClassDB::bind_method(D_METHOD("set_buff", "buff_value"), &RuntimeAttribute::set_buff);
+	ClassDB::bind_method(D_METHOD("set_value", "p_value"), &RuntimeAttribute::set_value);
+
+	/// binds properties to godot
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "attribute", PROPERTY_HINT_RESOURCE_TYPE, "AttributeBase"), "set_attribute", "get_attribute");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "buff"), "set_buff", "get_buff");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "value"), "set_value", "get_value");
+
+	/// adds signals to godot
+	ADD_SIGNAL(MethodInfo("attribute_changed", PropertyInfo(Variant::OBJECT, "attribute", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeAttributeBase"), PropertyInfo(Variant::FLOAT, "previous_value"), PropertyInfo(Variant::FLOAT, "new_value")));
+	ADD_SIGNAL(MethodInfo("buff_added", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
+	ADD_SIGNAL(MethodInfo("buff_removed", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
+	ADD_SIGNAL(MethodInfo("buff_time_updated", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
+	ADD_SIGNAL(MethodInfo("buffs_cleared"));
 }
 
 #pragma endregion

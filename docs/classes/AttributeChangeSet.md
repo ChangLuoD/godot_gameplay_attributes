@@ -5,6 +5,10 @@ This class is used to store changes to attributes before they are applied.
 
 Yes, this enables "transactional" changes to attributes which can be undone before they are committed.
 
+> **Note:** This class is not meant to be used directly.
+> 
+> You can have only one AttributeChangeSetOperation per attribute at a time for each AttributeChangeSet you create.
+
 ## Methods
 
 #### get_operations

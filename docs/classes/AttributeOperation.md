@@ -15,6 +15,8 @@ The operation can be one of the following:
 - `AttributeOperation.DIVIDE`: divides the attribute by the value.
 - `AttributeOperation.SET`: sets the attribute to the value.
 
+> **Note:** `AttributeOperation.SET` will not work inside the `AttributeBuff._apply` method.
+
 ## Methods
 
 - **static** `add`: creates an `AttributeOperation` that adds a value to the attribute.

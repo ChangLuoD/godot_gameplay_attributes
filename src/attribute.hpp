@@ -522,17 +522,20 @@ namespace octod::gameplay::attributes
 		/// @brief Add a buff to the attribute.
 		/// @param p_buff The buff to add.
 		/// @return True if the buff was added, false otherwise.
+		/// @deprecated
 		Ref<RuntimeBuff> add_buff(const Ref<AttributeBuff> &p_buff);
 
 		/// @brief Check if the attribute can receive a buff.
 		/// @param p_buff The buff to check.
 		/// @return True if the attribute can receive the buff, false otherwise.
+		/// @deprecated
 		[[nodiscard]] bool can_receive_buff(const Ref<AttributeBuff> &p_buff) const;
 
 		/// @brief Compute the value of the attribute.
 		void compute_value();
 
 		/// @brief Clear the buffs from the attribute.
+		/// @deprecated
 		void clear_buffs();
 
 		/// @brief Gets the attribute name.
@@ -546,10 +549,12 @@ namespace octod::gameplay::attributes
 		/// @brief Check if the attribute has a buff.
 		/// @param p_buff The buff to check.
 		/// @return True if the attribute has the buff, false otherwise.
+		/// @deprecated
 		[[nodiscard]] bool has_buff(const Ref<AttributeBuff> &p_buff) const;
 
 		/// @brief Check if the attribute has ongoing buffs.
 		/// @return True if the attribute has ongoing buffs, false otherwise.
+		/// @deprecated
 		[[nodiscard]] bool has_ongoing_buffs() const;
 
 		/// @brief Check if the attribute is computable.
@@ -559,6 +564,7 @@ namespace octod::gameplay::attributes
 		/// @brief Remove a buff from the attribute.
 		/// @param p_buff The buff to remove.
 		/// @return True if the buff was removed, false otherwise.
+		/// @deprecated
 		bool remove_buff(const Ref<AttributeBuff> &p_buff);
 
 		/// @brief Get the attribute.
@@ -575,6 +581,7 @@ namespace octod::gameplay::attributes
 
 		/// @brief Get the buffed value of the attribute.
 		/// @return The buffed value.
+		/// @deprecated
 		[[nodiscard]] float get_buffed_value() const;
 
 		/// @brief Get the attributes the attribute derives from.
@@ -590,6 +597,7 @@ namespace octod::gameplay::attributes
 		[[nodiscard]] float get_value() const;
 
 		/// @brief Get the buffs affecting the attribute.
+		/// @deprecated
 		[[nodiscard]] TypedArray<RuntimeBuff> get_buffs() const;
 
 		/// @brief Set the attribute.
@@ -599,6 +607,10 @@ namespace octod::gameplay::attributes
 		/// @brief Set the attribute set.w
 		/// @param p_value The attribute set.
 		void set_attribute_set(const Ref<AttributeSet> &p_value);
+
+		/// @brief Sets the buff value
+		/// @param p_value the attribute buff's value.
+		void set_buff(float p_value);
 
 		/// @brief Sets the value of the attribute.
 		/// @param p_value The value of the attribute.
