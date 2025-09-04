@@ -162,6 +162,22 @@ Dictionary AttributeChangeSet::prepare_diff() const
 		attribute_diff.instantiate();
 		diff.set(attribute_name, attribute_diff);
 
+		if (!Math::is_zero_approx(operation->duration)) {
+			attribute_diff->time_based = true;
+
+			switch (operation->tick_type) {
+				case AttributeChangeSetOperation::TICK_MILLISECOND:
+					attribute_diff->remaining_duration = operation->duration;
+					break;
+				case AttributeChangeSetOperation::TICK_SECOND:
+					attribute_diff->remaining_duration = operation->duration * 1000.0;
+					break;
+				case AttributeChangeSetOperation::TICK_MINUTE:
+					attribute_diff->remaining_duration = operation->duration * 60000.0;
+					break;
+			}
+		}
+
 		float permanent_additive_buff = 0.0;
 		float permanent_multiplicative_buff = 1.0;
 		float transient_additive_buff = 0.0;
