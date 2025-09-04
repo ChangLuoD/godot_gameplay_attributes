@@ -360,6 +360,17 @@ void AttributeBuffContext::rollback(const String &p_changeset_name)
 
 	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
 		if (const Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->change_set_name == p_changeset_name) {
+			const Dictionary diff = changeset->prepare_diff();
+			const PackedStringArray affected_attributes = diff.keys();
+
+			for (int j = 0; j < affected_attributes.size(); j++) {
+				const String &attribute_name = affected_attributes[j];
+				const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
+				const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
+
+				runtime_attribute->set_buff(runtime_attribute->get_buff() - attribute_diff->get_buff());
+			}
+
 			committed_changesets.erase(i);
 			break;
 		}
