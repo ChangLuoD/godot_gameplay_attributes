@@ -102,7 +102,7 @@ float AttributeOperation::get_value() const
 	return value;
 }
 
-float AttributeOperation::operate(float p_base_value) const
+float AttributeOperation::operate(const float p_base_value) const
 {
 	switch (operand) {
 		case OP_ADD:
@@ -139,6 +139,7 @@ void AttributeOperation::set_value(const float p_value)
 void AttributeBuffBase::_bind_methods()
 {
 	/// binds virtuals to godot
+	GDVIRTUAL_BIND(_apply, "attribute_buff_context");
 	GDVIRTUAL_BIND(_applies_to, "attribute_set");
 	GDVIRTUAL_BIND(_operate, "values", "attribute_set");
 }
@@ -782,64 +783,13 @@ void RuntimeBuff::set_time_left(const float p_value)
 
 #pragma region RuntimeAttributeBase
 
-Ref<RuntimeBuff> RuntimeAttribute::add_buff(const Ref<AttributeBuff> &p_buff)
+Ref<RuntimeBuff> RuntimeAttribute::add_buff(const Ref<AttributeBuff> &p_buff) const
 {
 	Ref<RuntimeBuff> runtime_buff;
 
-	if (!can_receive_buff(p_buff)) {
-		return runtime_buff;
-	}
+	ERR_FAIL_COND_V_MSG(attribute_container == nullptr, runtime_buff, "AttributeContainer is null.");
 
-	runtime_buff.instantiate();
-	runtime_buff->buff = p_buff;
-	runtime_buff->time_left = p_buff->get_duration();
-
-	ERR_FAIL_COND_V_MSG(runtime_buff.is_null(), runtime_buff, "Failed to create runtime buff from attribute buff.");
-
-	if (p_buff->get_transient()) {
-		if (const auto duration_merging = runtime_buff->buff->get_duration_merging(); duration_merging == AttributeBuff::DURATION_MERGE_ADD || duration_merging == AttributeBuff::DURATION_MERGE_RESTART) {
-			for (int i = 0; i < buffs.size(); i++) {
-				if (const auto maybe_runtime_buff = cast_to<RuntimeBuff>(buffs[i]); maybe_runtime_buff && maybe_runtime_buff->buff->equals_to(p_buff)) {
-					if (duration_merging == AttributeBuff::DURATION_MERGE_ADD) {
-						maybe_runtime_buff->set_time_left(maybe_runtime_buff->get_time_left() + p_buff->get_duration());
-					} else {
-						maybe_runtime_buff->set_time_left(p_buff->get_duration());
-					}
-
-					emit_signal("buff_time_updated", maybe_runtime_buff);
-					return maybe_runtime_buff;
-				}
-			}
-
-			runtime_buff->set_time_left(p_buff->get_duration());
-		}
-
-		buffs.push_back(runtime_buff);
-		emit_signal("buff_added", runtime_buff);
-
-		if (!Math::is_zero_approx(p_buff->get_duration())) {
-			emit_signal("buff_enqueued", runtime_buff);
-		}
-	} else {
-		previous_value = value;
-
-		if (GDVIRTUAL_IS_OVERRIDDEN_PTR(attribute, _compute_value)) {
-			AttributeComputationArgument *argument = memnew(AttributeComputationArgument);
-
-			argument->set_attribute_container(attribute_container);
-			argument->set_buff(p_buff.ptr());
-			argument->set_operated_value(runtime_buff->operate(this));
-			argument->set_runtime_attribute(this);
-
-			GDVIRTUAL_CALL_PTR(attribute, _compute_value, argument, value);
-		} else if (runtime_buff->can_apply_to_attribute(this)) {
-			value = runtime_buff->operate(this);
-		}
-
-		if (!Math::is_equal_approx(previous_value, value)) {
-			emit_signal("attribute_changed", this, previous_value, value);
-		}
-	}
+	attribute_container->apply_buff(p_buff);
 
 	return runtime_buff;
 }
@@ -1072,13 +1022,6 @@ void RuntimeAttribute::_bind_methods()
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "attribute", PROPERTY_HINT_RESOURCE_TYPE, "AttributeBase"), "set_attribute", "get_attribute");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "buff"), "set_buff", "get_buff");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "value"), "set_value", "get_value");
-
-	/// adds signals to godot
-	ADD_SIGNAL(MethodInfo("attribute_changed", PropertyInfo(Variant::OBJECT, "attribute", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeAttributeBase"), PropertyInfo(Variant::FLOAT, "previous_value"), PropertyInfo(Variant::FLOAT, "new_value")));
-	ADD_SIGNAL(MethodInfo("buff_added", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
-	ADD_SIGNAL(MethodInfo("buff_removed", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
-	ADD_SIGNAL(MethodInfo("buff_time_updated", PropertyInfo(Variant::OBJECT, "buff", PROPERTY_HINT_RESOURCE_TYPE, "RuntimeBuff")));
-	ADD_SIGNAL(MethodInfo("buffs_cleared"));
 }
 
 #pragma endregion

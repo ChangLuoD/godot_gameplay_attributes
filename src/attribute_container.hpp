@@ -11,6 +11,7 @@
 #ifndef OCTOD_GAMEPLAY_ATTRIBUTES_ATTRIBUTE_CONTAINER_H
 #define OCTOD_GAMEPLAY_ATTRIBUTES_ATTRIBUTE_CONTAINER_H
 
+#include "attribute.hpp"
 #include "attribute_buff.h"
 
 #include <godot_cpp/classes/node.hpp>
@@ -21,7 +22,6 @@ namespace octod::gameplay::attributes
 {
 	class AttributeBase;
 	class AttributeBuff;
-	class AttributeSet;
 	class RuntimeAttribute;
 	class RuntimeBuff;
 
@@ -98,6 +98,10 @@ namespace octod::gameplay::attributes
 		/// @return The base value of the attribute with the given name.
 		[[nodiscard]] float get_attribute_value_by_name(const String &p_name) const;
 
+		/// @brief Notifies derived attributes that an attribute has changed.
+		/// @param p_base_runtime_attribute The attribute that changed.
+		void notify_derived_attributes(const Ref<RuntimeAttribute> &p_base_runtime_attribute);
+
 		/// @brief Rollbacks a changeset by its name.
 		/// @param p_changeset_name The name of the changeset.
 		void rollback_change_set(const String &p_changeset_name) const;
@@ -129,7 +133,7 @@ namespace octod::gameplay::attributes
 		/// @brief Derived attributes. These are attributes that are calculated from other attributes.
 		Dictionary derived_attributes;
 		/// @brief If set to true, AttributeBuff durations are going to be handled by you.
-		bool manual_ticking = false;
+		bool manual_ticking;
 
 		/// @brief Receives a notification.
 		/// @param p_what The notification.
@@ -156,10 +160,6 @@ namespace octod::gameplay::attributes
 
 		/// @brief Checks if the container has a specific attribute.
 		[[nodiscard]] bool has_attribute(const Ref<AttributeBase> &p_attribute) const;
-
-		/// @brief Notifies derived attributes that an attribute has changed.
-		/// @param p_base_runtime_attribute The attribute that changed.
-		void notify_derived_attributes(const Ref<RuntimeAttribute> &p_base_runtime_attribute);
 	};
 } //namespace octod::gameplay::attributes
 

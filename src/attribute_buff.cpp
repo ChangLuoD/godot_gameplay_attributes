@@ -44,6 +44,11 @@ float AttributeDiff::get_current() const
 	return current;
 }
 
+float AttributeDiff::get_forcefully_set_value() const
+{
+	return forcefully_set_value;
+}
+
 float AttributeDiff::get_previous() const
 {
 	return previous;
@@ -52,6 +57,11 @@ float AttributeDiff::get_previous() const
 void AttributeDiff::set_current(const float p_current)
 {
 	current = p_current;
+}
+
+void AttributeDiff::set_forcefully_set_value(const float p_forcefully_set_value)
+{
+	forcefully_set_value = p_forcefully_set_value;
 }
 
 void AttributeDiff::set_previous(const float p_previous)
@@ -65,16 +75,19 @@ void AttributeDiff::_bind_methods()
 	ClassDB::bind_method(D_METHOD("did_change"), &AttributeDiff::did_change);
 	ClassDB::bind_method(D_METHOD("get_buff"), &AttributeDiff::get_buff);
 	ClassDB::bind_method(D_METHOD("get_current"), &AttributeDiff::get_current);
+	ClassDB::bind_method(D_METHOD("get_forcefully_set_value"), &AttributeDiff::get_forcefully_set_value);
 	ClassDB::bind_method(D_METHOD("get_previous"), &AttributeDiff::get_previous);
 	ClassDB::bind_method(D_METHOD("get_previous_buff"), &AttributeDiff::get_previous_buff);
 	ClassDB::bind_method(D_METHOD("set_buff", "buff"), &AttributeDiff::set_buff);
 	ClassDB::bind_method(D_METHOD("set_current", "current"), &AttributeDiff::set_current);
+	ClassDB::bind_method(D_METHOD("set_forcefully_set_value", "forcefully_set_value"), &AttributeDiff::set_forcefully_set_value);
 	ClassDB::bind_method(D_METHOD("set_previous", "previous"), &AttributeDiff::set_previous);
 	ClassDB::bind_method(D_METHOD("set_previous_buff", "previous_buff"), &AttributeDiff::set_previous_buff);
 
 	/// binds properties to godot
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "buff"), "set_buff", "get_buff");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "current"), "set_current", "get_current");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "forcefully_set_value"), "set_forcefully_set_value", "get_forcefully_set_value");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous"), "set_previous", "get_previous");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous_buff"), "set_previous_buff", "get_previous_buff");
 }
@@ -82,7 +95,7 @@ void AttributeDiff::_bind_methods()
 bool AttributeChangeSetOperation::can_be_processed() const
 {
 	if (execution_order == AttributeBuff::QueueExecution::QUEUE_EXECUTION_WATERFALL) {
-		TypedArray<AttributeChangeSetOperation> similar_operations = change_set->attribute_buff_context->get_committed_changeset_operations_for_attribute(runtime_attribute->get_attribute_name());
+		TypedArray<AttributeChangeSetOperation> similar_operations = change_set->attribute_buff_context->get_merged_changeset_operations_for_attribute(runtime_attribute->get_attribute_name());
 
 		if (similar_operations.size() == 1) {
 			return true;
@@ -190,18 +203,22 @@ void AttributeChangeSetOperation::_bind_methods()
 
 void AttributeChangeSet::clear_persistent_operations()
 {
-	for (int64_t i = operations.size() - 1; i >= 0; i--) {
-		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !operation->transient_operation) {
-			operations.erase(i);
+	TypedArray<AttributeChangeSetOperation> operation_values = get_operations();
+
+	for (int64_t i = operation_values.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSetOperation> operation = operation_values[i]; operation.is_valid() && !operation->transient_operation) {
+			operations.erase(operation);
 		}
 	}
 }
 
 void AttributeChangeSet::clear_timed_out_operations()
 {
-	for (int64_t i = operations.size() - 1; i >= 0; i--) {
-		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !Math::is_zero_approx(operation->duration) && operation->remaining_duration <= 0.0) {
-			operations.erase(i);
+	TypedArray<AttributeChangeSetOperation> operation_values = get_operations();
+
+	for (int64_t i = operation_values.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSetOperation> operation = operation_values[i]; operation.is_valid() && !Math::is_zero_approx(operation->duration) && operation->remaining_duration <= 0.0) {
+			operations.erase(operation);
 		}
 	}
 }
@@ -255,6 +272,7 @@ Dictionary AttributeChangeSet::prepare_diff() const
 			}
 		}
 
+		float forcefully_set_value = 0.0;
 		float permanent_additive_buff = 0.0;
 		float permanent_multiplicative_buff = 1.0;
 		float transient_additive_buff = 0.0;
@@ -278,12 +296,15 @@ Dictionary AttributeChangeSet::prepare_diff() const
 					permanent_multiplicative_buff = operation->attribute_operation->operate(permanent_multiplicative_buff);
 				}
 				break;
+			case OP_SET:
+				forcefully_set_value = operation->attribute_operation->operate(forcefully_set_value);
 			default:
 				break;
 		}
 
 		attribute_diff->set_buff(transient_additive_buff + (operation->runtime_attribute->get_value() * transient_multiplicative_buff));
 		attribute_diff->set_current((permanent_additive_buff * permanent_multiplicative_buff));
+		attribute_diff->set_forcefully_set_value(forcefully_set_value);
 		attribute_diff->set_previous(attribute_buff_context->get_attribute(attribute_name)->get_value());
 		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
 	}
@@ -311,12 +332,14 @@ Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_att
 
 void AttributeChangeSet::tick_operations(const float p_delta, const int p_tick_type)
 {
-	for (int64_t i = operations.size() - 1; i >= 0; i--) {
-		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !Math::is_zero_approx(operation->duration)) {
+	TypedArray<AttributeChangeSetOperation> operation_values = get_operations();
+
+	for (int64_t i = operation_values.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSetOperation> operation = operation_values[i]; !Math::is_zero_approx(operation->duration)) {
 			operation->set_remaining_duration(p_delta, p_tick_type);
 
 			if (Math::is_zero_approx(operation->remaining_duration) || operation->remaining_duration < 0.0) {
-				operations.erase(i);
+				operations.erase(operation);
 			}
 		}
 	}
@@ -343,17 +366,22 @@ void AttributeBuffContext::commit(const Ref<AttributeChangeSet> &p_changeset)
 	committed_changesets.append(p_changeset);
 }
 
-TypedArray<AttributeChangeSet> AttributeBuffContext::get_committed_changesets() const
+bool AttributeBuffContext::has_committed_changesets() const
 {
-	return committed_changesets;
+	return committed_changesets.size() > 0;
 }
 
-TypedArray<AttributeChangeSet> AttributeBuffContext::get_committed_changesets_by_name(const String &p_changeset_name) const
+TypedArray<AttributeChangeSet> AttributeBuffContext::get_merged_changesets() const
+{
+	return merged_changesets;
+}
+
+TypedArray<AttributeChangeSet> AttributeBuffContext::get_merged_changesets_by_name(const String &p_changeset_name) const
 {
 	TypedArray<AttributeChangeSet> subset;
 
-	for (int64_t i = 0; i < committed_changesets.size(); i++) {
-		if (Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->change_set_name == p_changeset_name) {
+	for (int64_t i = 0; i < merged_changesets.size(); i++) {
+		if (Ref<AttributeChangeSet> changeset = merged_changesets[i]; changeset->change_set_name == p_changeset_name) {
 			subset.append(changeset);
 		}
 	}
@@ -361,12 +389,12 @@ TypedArray<AttributeChangeSet> AttributeBuffContext::get_committed_changesets_by
 	return subset;
 }
 
-TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations() const
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_merged_changeset_operations() const
 {
 	TypedArray<AttributeChangeSetOperation> operations;
 
-	for (int i = 0; i < committed_changesets.size(); i++) {
-		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+	for (int i = 0; i < merged_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = merged_changesets[i];
 		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
 		operations.append_array(changeset_operations);
 	}
@@ -374,12 +402,12 @@ TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_chan
 	return operations;
 }
 
-TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations_for_attribute(const String &p_attribute_name) const
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_merged_changeset_operations_for_attribute(const String &p_attribute_name) const
 {
 	TypedArray<AttributeChangeSetOperation> operations;
 
-	for (int i = 0; i < committed_changesets.size(); i++) {
-		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+	for (int i = 0; i < merged_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = merged_changesets[i];
 		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
 
 		for (int j = 0; j < changeset_operations.size(); j++) {
@@ -392,12 +420,12 @@ TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_chan
 	return operations;
 }
 
-TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations_for_attribute_with_duration(const String &p_attribute_name) const
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_merged_changeset_operations_for_attribute_with_duration(const String &p_attribute_name) const
 {
 	TypedArray<AttributeChangeSetOperation> operations;
 
-	for (int i = 0; i < committed_changesets.size(); i++) {
-		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+	for (int i = 0; i < merged_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = merged_changesets[i];
 		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
 
 		for (int j = 0; j < changeset_operations.size(); j++) {
@@ -410,12 +438,12 @@ TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_chan
 	return operations;
 }
 
-TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations_with_duration() const
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_merged_changeset_operations_with_duration() const
 {
 	TypedArray<AttributeChangeSetOperation> operations;
 
-	for (int i = 0; i < committed_changesets.size(); i++) {
-		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+	for (int i = 0; i < merged_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = merged_changesets[i];
 		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
 
 		for (int j = 0; j < changeset_operations.size(); j++) {
@@ -446,6 +474,7 @@ Dictionary AttributeBuffContext::get_diff() const
 			if (i > 0) {
 				stored_attribute_diff->set_buff(stored_attribute_diff->get_buff() + attribute_diff->get_buff());
 				stored_attribute_diff->set_current(stored_attribute_diff->get_current() + attribute_diff->get_current());
+				stored_attribute_diff->set_forcefully_set_value(attribute_diff->get_forcefully_set_value());
 			}
 		}
 	}
@@ -475,8 +504,8 @@ bool AttributeBuffContext::has_changeset(const String &p_changeset_name) const
 		return false;
 	}
 
-	for (int i = 0; i < committed_changesets.size(); i++) {
-		if (const Ref<AttributeChangeSet> p_changeset = committed_changesets[i]; p_changeset->change_set_name == p_changeset_name) {
+	for (int i = 0; i < merged_changesets.size(); i++) {
+		if (const Ref<AttributeChangeSet> p_changeset = merged_changesets[i]; p_changeset->change_set_name == p_changeset_name) {
 			return true;
 		}
 	}
@@ -506,13 +535,17 @@ void AttributeBuffContext::merge()
 
 	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
 		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+
 		changeset->clear_persistent_operations();
 
 		if (!changeset->has_operations()) {
-			committed_changesets.erase(i);
+			committed_changesets.remove_at(i);
+		} else {
+			merged_changesets.append(changeset);
 		}
 	}
 
+	committed_changesets.clear();
 	notify_attributes_container();
 }
 
@@ -533,12 +566,26 @@ void AttributeBuffContext::notify_attributes_container()
 		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
 			Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_diff->attribute_name);
 
-			attribute_container->emit_signal(
-					"attribute_changed",
-					runtime_attribute,
-					attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
-					attribute_diff->get_current() + attribute_diff->get_buff()
-					);
+			if (float forcefully_set_value = attribute_diff->get_forcefully_set_value(); !Math::is_zero_approx(forcefully_set_value)) {
+				runtime_attribute->set_buff(attribute_diff->get_buff());
+				runtime_attribute->set_value(attribute_diff->get_current());
+				attribute_container->emit_signal(
+						"attribute_changed",
+						runtime_attribute,
+						attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
+						attribute_diff->get_current() + attribute_diff->get_buff()
+						);
+			} else {
+				runtime_attribute->set_value(forcefully_set_value);
+				attribute_container->emit_signal(
+						"attribute_changed",
+						runtime_attribute,
+						attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
+						forcefully_set_value
+						);
+			}
+
+			attribute_container->notify_derived_attributes(runtime_attribute);
 		}
 	}
 
@@ -549,8 +596,8 @@ void AttributeBuffContext::rollback(const String &p_changeset_name)
 {
 	ERR_FAIL_NULL_MSG(attribute_container, "AttributeContainer is null, cannot rollback. This is probably due to a manual instantiation of AttributeBuffContext.");
 
-	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
-		if (const Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->change_set_name == p_changeset_name) {
+	for (int64_t i = merged_changesets.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSet> changeset = merged_changesets[i]; changeset->change_set_name == p_changeset_name) {
 			const Dictionary diff = changeset->prepare_diff();
 			const PackedStringArray affected_attributes = diff.keys();
 
@@ -562,7 +609,7 @@ void AttributeBuffContext::rollback(const String &p_changeset_name)
 				runtime_attribute->set_buff(runtime_attribute->get_buff() - attribute_diff->get_buff());
 			}
 
-			committed_changesets.erase(i);
+			merged_changesets.erase(i);
 			break;
 		}
 	}
@@ -577,8 +624,8 @@ void AttributeBuffContext::set_attribute_container(AttributeContainer *p_contain
 
 void AttributeBuffContext::tick_operations(const float p_delta, const int p_tick_type)
 {
-	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
-		if (const Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->has_operations()) {
+	for (int64_t i = merged_changesets.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSet> changeset = merged_changesets[i]; changeset->has_operations()) {
 			changeset->tick_operations(p_delta, p_tick_type);
 		}
 	}

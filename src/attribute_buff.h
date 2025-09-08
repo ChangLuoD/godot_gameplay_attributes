@@ -40,6 +40,8 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] float get_current() const;
 
+		[[nodiscard]] float get_forcefully_set_value() const;
+
 		[[nodiscard]] float get_previous() const;
 
 		[[nodiscard]] float get_previous_buff() const;
@@ -47,6 +49,8 @@ namespace octod::gameplay::attributes
 		void set_buff(float p_buff);
 
 		void set_current(float p_current);
+
+		void set_forcefully_set_value(float p_forcefully_set_value);
 
 		void set_previous(float p_previous);
 
@@ -58,6 +62,8 @@ namespace octod::gameplay::attributes
 		float buff = 0.0f;
 
 		float current = 0.0f;
+
+		float forcefully_set_value;
 
 		float previous = 0.0f;
 
@@ -173,17 +179,19 @@ namespace octod::gameplay::attributes
 	public:
 		void commit(const Ref<AttributeChangeSet> &p_changeset);
 
-		[[nodiscard]] TypedArray<AttributeChangeSet> get_committed_changesets() const;
+		[[nodiscard]] bool has_committed_changesets() const;
 
-		[[nodiscard]] TypedArray<AttributeChangeSet> get_committed_changesets_by_name(const String &p_changeset_name) const;
+		[[nodiscard]] TypedArray<AttributeChangeSet> get_merged_changesets() const;
 
-		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations() const;
+		[[nodiscard]] TypedArray<AttributeChangeSet> get_merged_changesets_by_name(const String &p_changeset_name) const;
 
-		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations_for_attribute(const String &p_attribute_name) const;
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_merged_changeset_operations() const;
 
-		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations_for_attribute_with_duration(const String &p_attribute_name) const;
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_merged_changeset_operations_for_attribute(const String &p_attribute_name) const;
 
-		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations_with_duration() const;
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_merged_changeset_operations_for_attribute_with_duration(const String &p_attribute_name) const;
+
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_merged_changeset_operations_with_duration() const;
 
 		/// @brief Returns a Dictionary where the key is the attribute name, and the value is an instance of AttributeDiff
 		[[nodiscard]] Dictionary get_diff() const;
@@ -216,6 +224,8 @@ namespace octod::gameplay::attributes
 		AttributeContainer *attribute_container = nullptr;
 
 		TypedArray<AttributeChangeSet> committed_changesets;
+
+		TypedArray<AttributeChangeSet> merged_changesets;
 
 		TypedArray<AttributeDiff> diffs_to_notify;
 	};

@@ -22,6 +22,10 @@ void AttributeContainer::_notification(const int p_what)
 		set_physics_process(true);
 	} else if (p_what == NOTIFICATION_PHYSICS_PROCESS && !manual_ticking) {
 		buff_context->tick_operations(static_cast<float>(get_physics_process_delta_time()));
+
+		if (buff_context->has_committed_changesets()) {
+			buff_context->merge();
+		}
 	}
 }
 
@@ -107,16 +111,6 @@ void AttributeContainer::add_attribute(const Ref<AttributeBase> &p_attribute)
 		}
 	}
 
-	const Callable attribute_changed_callable = Callable::create(this, "_on_attribute_changed");
-	const Callable buff_applied_callable = Callable::create(this, "_on_buff_applied");
-	const Callable buff_removed_callable = Callable::create(this, "_on_buff_removed");
-	const Callable buff_time_updated_callable = Callable::create(this, "_on_buff_time_updated");
-
-	runtime_attribute->connect("attribute_changed", attribute_changed_callable);
-	runtime_attribute->connect("buff_added", buff_applied_callable);
-	runtime_attribute->connect("buff_removed", buff_removed_callable);
-	runtime_attribute->connect("buff_time_updated", buff_time_updated_callable);
-
 	attributes[p_attribute->get_attribute_name()] = runtime_attribute;
 }
 
@@ -165,7 +159,7 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 				continue;
 			}
 
-			if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_committed_changesets_by_name(change_set_name).size() >= max_stack_size) {
+			if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_merged_changesets_by_name(change_set_name).size() >= max_stack_size) {
 				continue;
 			}
 
@@ -177,7 +171,7 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 
 			switch (p_buff->get_duration_merging()) {
 				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD: {
-					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_committed_changesets_by_name(change_set_name);
+					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(change_set_name);
 
 					for (int j = 0; j < other_changesets.size(); j++) {
 						const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
@@ -217,11 +211,6 @@ void AttributeContainer::remove_attribute(const Ref<AttributeBase> &p_attribute)
 	const String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
 
 	ERR_FAIL_COND_MSG(!attributes.has(attribute_name), "Attribute not found. This is a bug, please open an issue.");
-
-	runtime_attribute->disconnect("attribute_changed", Callable::create(this, "_on_attribute_changed"));
-	runtime_attribute->disconnect("buff_added", Callable::create(this, "_on_buff_applied"));
-	runtime_attribute->disconnect("buff_removed", Callable::create(this, "_on_buff_removed"));
-
 	ERR_FAIL_COND_MSG(!attributes.erase(attribute_name), "Failed to remove attribute from container.");
 }
 
@@ -241,6 +230,10 @@ void AttributeContainer::setup()
 		for (int i = 0; i < attribute_set->count(); i++) {
 			add_attribute(attribute_set->get_at(i));
 		}
+	}
+
+	if (buff_context.is_null()) {
+		buff_context.instantiate();
 	}
 
 	buff_context->set_attribute_container(this);

@@ -436,7 +436,7 @@ namespace octod::gameplay::attributes
 	};
 
 	/**
-	 *
+	 * @deprecated this class is no longer needed, it's still here to avoid breaking retro-compat
 	 */
 	class RuntimeBuff : public RefCounted
 	{
@@ -480,7 +480,7 @@ namespace octod::gameplay::attributes
 		/// @brief Returns if the buff is transient.
 		/// @return True if the buff is transient, false otherwise.
 		[[nodiscard]] bool is_transient() const;
-		/// @brief Returns if the buff is transient and time based.
+		/// @brief Returns if the buff is transient and time-based.
 		/// @return True if the buff is transient and its own duration is greater than 0.0.
 		bool is_transient_time_based() const;
 		/// @brief Set the buff.
@@ -523,7 +523,7 @@ namespace octod::gameplay::attributes
 		/// @param p_buff The buff to add.
 		/// @return True if the buff was added, false otherwise.
 		/// @deprecated
-		Ref<RuntimeBuff> add_buff(const Ref<AttributeBuff> &p_buff);
+		[[nodiscard]] Ref<RuntimeBuff> add_buff(const Ref<AttributeBuff> &p_buff) const;
 
 		/// @brief Check if the attribute can receive a buff.
 		/// @param p_buff The buff to check.
@@ -535,7 +535,7 @@ namespace octod::gameplay::attributes
 		void compute_value();
 
 		/// @brief Clear the buffs from the attribute.
-		/// @deprecated
+		/// @deprecated, use AttributeContainer::rollback instead
 		void clear_buffs();
 
 		/// @brief Gets the attribute name.
