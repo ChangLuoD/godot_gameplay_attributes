@@ -37,7 +37,7 @@ namespace octod::gameplay::attributes
 
 		/// @brief Adds a buff to the container.
 		/// @param p_buff The buff to add.
-		void apply_buff(const Ref<AttributeBuff> &p_buff);
+		void apply_buff(const Ref<AttributeBuff> &p_buff) const;
 
 		/// @brief Removes an attribute from the container.
 		/// @param p_attribute The attribute to remove.
@@ -98,6 +98,10 @@ namespace octod::gameplay::attributes
 		/// @return The base value of the attribute with the given name.
 		[[nodiscard]] float get_attribute_value_by_name(const String &p_name) const;
 
+		/// @brief Rollbacks a changeset by its name.
+		/// @param p_changeset_name The name of the changeset.
+		void rollback_change_set(const String &p_changeset_name) const;
+
 		/// @brief Sets the attributes of the container.
 		/// @param p_attribute_set The attributes to set.
 		void set_attribute_set(const Ref<AttributeSet> &p_attribute_set);
@@ -109,7 +113,7 @@ namespace octod::gameplay::attributes
 		/// @brief Subtracts the passed p_tick value to all timed transient AttributeBuff instances durations in the container.
 		/// 	   Ideal for turn-based games or to handle programmatic resets/updates.
 		/// @param p_tick The tick value. The value passed is subtracted from transient AttributeBuff durations
-		void subtract_attribute_buffs_ticks(float p_tick);
+		void subtract_attribute_buffs_ticks(float p_tick) const;
 
 	protected:
 		/// @brief Bind methods to Godot.

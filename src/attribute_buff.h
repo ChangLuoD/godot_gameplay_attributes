@@ -74,15 +74,28 @@ namespace octod::gameplay::attributes
 			TICK_MILLISECOND = 0,
 			TICK_SECOND = 1,
 			TICK_MINUTE = 2,
+			TICK_MANUAL = 3,
 		};
 
+		[[nodiscard]] bool can_be_processed() const;
+
+		[[nodiscard]] float get_duration() const;
+
+		[[nodiscard]] int get_execution_order() const;
+
 		[[nodiscard]] float get_resulting_value() const;
+
+		[[nodiscard]] bool is_applied_every_tick() const;
 
 		void reapply_every_tick(bool p_reapplies_every_tick);
 
 		void reset_duration(bool p_resets_duration);
 
 		void set_duration(float p_duration, int p_tick_type = TICK_MILLISECOND);
+
+		void set_execution_order(int p_execution_order = 0);
+
+		void set_remaining_duration(float p_remaining_duration, int p_tick_type = TICK_MILLISECOND);
 
 		void set_transient(bool p_transient);
 
@@ -98,6 +111,12 @@ namespace octod::gameplay::attributes
 		AttributeChangeSet *change_set = nullptr;
 
 		float duration = 0.0;
+
+		bool executing = false;
+
+		int execution_order = 0;
+
+		float remaining_duration = 0.0;
 
 		bool reapplies_every_tick = false;
 
@@ -117,6 +136,8 @@ namespace octod::gameplay::attributes
 	public:
 		void clear_persistent_operations();
 
+		void clear_timed_out_operations();
+
 		[[nodiscard]] PackedStringArray get_affected_attributes() const;
 
 		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_operations() const;
@@ -128,6 +149,8 @@ namespace octod::gameplay::attributes
 		[[nodiscard]] Dictionary prepare_diff() const;
 
 		Ref<AttributeChangeSetOperation> operate(const String &p_attribute_name, AttributeOperation *p_attribute_operation);
+
+		void tick_operations(float p_delta, int p_tick_type = AttributeChangeSetOperation::TICK_MILLISECOND);
 
 	protected:
 		friend class AttributeBuffContext;
@@ -150,6 +173,18 @@ namespace octod::gameplay::attributes
 	public:
 		void commit(const Ref<AttributeChangeSet> &p_changeset);
 
+		[[nodiscard]] TypedArray<AttributeChangeSet> get_committed_changesets() const;
+
+		[[nodiscard]] TypedArray<AttributeChangeSet> get_committed_changesets_by_name(const String &p_changeset_name) const;
+
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations() const;
+
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations_for_attribute(const String &p_attribute_name) const;
+
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations_for_attribute_with_duration(const String &p_attribute_name) const;
+
+		[[nodiscard]] TypedArray<AttributeChangeSetOperation> get_committed_changeset_operations_with_duration() const;
+
 		/// @brief Returns a Dictionary where the key is the attribute name, and the value is an instance of AttributeDiff
 		[[nodiscard]] Dictionary get_diff() const;
 
@@ -169,6 +204,8 @@ namespace octod::gameplay::attributes
 		void rollback(const String &p_changeset_name);
 
 		void set_attribute_container(AttributeContainer *p_container);
+
+		void tick_operations(float p_delta, int p_tick_type = AttributeChangeSetOperation::TICK_MILLISECOND);
 
 	protected:
 		friend class AttributeChangeSetOperation;

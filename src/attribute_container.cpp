@@ -21,52 +21,7 @@ void AttributeContainer::_notification(const int p_what)
 		setup();
 		set_physics_process(true);
 	} else if (p_what == NOTIFICATION_PHYSICS_PROCESS && !manual_ticking) {
-		const TypedArray<RuntimeAttribute> &runtime_attributes = attributes.values();
-		const float phy_time = static_cast<float>(get_physics_process_delta_time());
-
-		for (int64_t i = 0; i < runtime_attributes.size(); i++) {
-			const Ref<RuntimeAttribute> &attribute = runtime_attributes[i];
-
-			if (!attribute.is_valid()) {
-				continue;
-			}
-
-			TypedArray<RuntimeBuff> buffs = attribute->get_buffs();
-
-			for (int64_t j = buffs.size() - 1; j >= 0; j--) {
-				if (const Ref<RuntimeBuff> &buff = buffs[j]; buff.is_valid() && buff->is_transient_time_based()) {
-					/// check if the buff needs a waterfall or parallel execution.
-					/// for the latter, keep the code as it is
-					/// for the first, check if another buff of the same
-					/// type exists in the queue and,
-					/// if present, avoid setting the time left.
-					if (buff->get_buff()->get_queue_execution() == AttributeBuff::QueueExecution::QUEUE_EXECUTION_WATERFALL) {
-						bool should_skip = false;
-
-						/// we act as a fifo, so let's see if there are other buffs applied before the current one.
-						for (int64_t k = j - 1; k >= 0; k--) {
-							if (const Ref<RuntimeBuff> other_buff = buffs[k]; other_buff->equals_to(buff->buff)) {
-								should_skip = true;
-								break;
-							}
-						}
-
-						if (should_skip) {
-							continue;
-						}
-					}
-
-					buff->set_time_left(buff->get_time_left() - phy_time);
-
-					emit_signal("buff_time_elapsed", buff);
-
-					if (buff->can_dequeue()) {
-						emit_signal("buff_dequeued", buff);
-						remove_buff(buff->buff);
-					}
-				}
-			}
-		}
+		buff_context->tick_operations(static_cast<float>(get_physics_process_delta_time()));
 	}
 }
 
@@ -165,7 +120,7 @@ void AttributeContainer::add_attribute(const Ref<AttributeBase> &p_attribute)
 	attributes[p_attribute->get_attribute_name()] = runtime_attribute;
 }
 
-void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff)
+void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 {
 	ERR_FAIL_NULL_MSG(p_buff, "Buff cannot be null, it must be an instance of a class inheriting from AttributeBuff abstract class.");
 
@@ -197,25 +152,53 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff)
 		/// we are going to create a new AttributeBuff for each derived attribute affected by the buff
 		/// we will add this buff to each affected runtime attribute.
 		for (int i = 0; i < operations.size(); i++) {
-			Ref<AttributeBuff> derived_buff;
-			derived_buff.instantiate();
-
+			const Ref<AttributeOperation> attribute_operation = operations[i];
 			const Ref<RuntimeAttribute> &runtime_attribute = _affected_runtime_attributes[i];
 
-			derived_buff->set_attribute_name(runtime_attribute->get_attribute()->get_attribute_name());
-			derived_buff->set_buff_name(p_buff->get_buff_name());
-			derived_buff->set_duration(p_buff->get_duration());
-			derived_buff->set_duration_merging(p_buff->get_duration_merging());
-			derived_buff->set_parent_buff(p_buff);
-			derived_buff->set_queue_execution(p_buff->get_queue_execution());
-			derived_buff->set_unique(p_buff->get_unique());
-			derived_buff->set_stack_size(p_buff->get_stack_size());
-			derived_buff->set_transient(p_buff->get_transient());
-			derived_buff->set_operation(operations[i]);
+			ERR_FAIL_COND_MSG(!runtime_attribute.is_valid(), "Attribute not valid at index " + itos(i));
 
-			if (Ref<RuntimeBuff> latest_runtime_buff_applied = runtime_attribute->add_buff(derived_buff); latest_runtime_buff_applied.is_valid() && p_buff->get_transient() && !Math::is_zero_approx(p_buff->get_duration())) {
-				emit_signal("buff_enqueued", latest_runtime_buff_applied);
+			String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
+			const String change_set_name = attribute_name + "/" + p_buff->get_buff_name();
+			Ref<AttributeChangeSet> attribute_change_set = buff_context->new_changeset(change_set_name);
+
+			if (p_buff->get_unique() && buff_context->has_changeset(change_set_name)) {
+				continue;
 			}
+
+			if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_committed_changesets_by_name(change_set_name).size() >= max_stack_size) {
+				continue;
+			}
+
+			const Ref<AttributeChangeSetOperation> attribute_changeset_operation = attribute_change_set->operate(attribute_name, attribute_operation.ptr());
+
+			attribute_changeset_operation->set_duration(p_buff->get_duration(), manual_ticking ? AttributeChangeSetOperation::TICK_MANUAL : AttributeChangeSetOperation::TICK_MILLISECOND);
+			attribute_changeset_operation->set_execution_order(p_buff->get_queue_execution());
+			attribute_changeset_operation->set_transient(p_buff->get_transient());
+
+			switch (p_buff->get_duration_merging()) {
+				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD: {
+					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_committed_changesets_by_name(change_set_name);
+
+					for (int j = 0; j < other_changesets.size(); j++) {
+						const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
+						TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
+
+						for (int k = 0; k < other_operation.size(); k++) {
+							const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
+							other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
+						}
+					}
+				}
+				break;
+				case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
+					buff_context->rollback(change_set_name);
+					break;
+				case AttributeBuff::DurationMerging::DURATION_MERGE_STACK:
+				default:
+					break;
+			}
+
+			buff_context->commit(attribute_change_set);
 		}
 	} else {
 		p_buff->apply(buff_context.ptr());
@@ -247,27 +230,7 @@ void AttributeContainer::remove_buff(const Ref<AttributeBuff> &p_buff) const
 	ERR_FAIL_NULL_MSG(p_buff, "Buff cannot be null, it must be an instance of a class inheriting from AttributeBuff abstract class.");
 	ERR_FAIL_COND_MSG(p_buff.is_null(), "Buff cannot be null, it must be an instance of a class inheriting from AttributeBuff abstract class.");
 
-	if (p_buff->is_operate_overridden()) {
-		TypedArray<AttributeBase> _attributes;
-
-		ERR_FAIL_COND_MSG(!GDVIRTUAL_IS_OVERRIDDEN_PTR(p_buff, _applies_to), "Buff must override the _applies_to method to apply to derived attributes.");
-		ERR_FAIL_COND_MSG(!GDVIRTUAL_CALL_PTR(p_buff, _applies_to, attribute_set, _attributes), "An error occurred calling the overridden _applies_to method.");
-
-		for (int i = 0; i < _attributes.size(); i++) {
-			Ref<AttributeBuff> buff_copy = p_buff->duplicate();
-			Ref<RuntimeAttribute> runtime_attribute = get_runtime_attribute_by_name(cast_to<Attribute>(_attributes[i])->get_attribute_name());
-
-			buff_copy->set_attribute_name(runtime_attribute->attribute->get_attribute_name());
-
-			runtime_attribute->remove_buff(buff_copy);
-		}
-	} else {
-		Array _attributes = attributes.values();
-
-		for (int i = 0; i < _attributes.size(); i++) {
-			cast_to<RuntimeAttribute>(_attributes[i])->remove_buff(p_buff);
-		}
-	}
+	buff_context->rollback(p_buff->get_buff_name());
 }
 
 void AttributeContainer::setup()
@@ -279,6 +242,8 @@ void AttributeContainer::setup()
 			add_attribute(attribute_set->get_at(i));
 		}
 	}
+
+	buff_context->set_attribute_container(this);
 }
 
 Ref<RuntimeAttribute> AttributeContainer::find(const Callable &p_predicate) const
@@ -348,64 +313,25 @@ float AttributeContainer::get_attribute_value_by_name(const String &p_name) cons
 	return attribute.is_valid() ? attribute->get_value() : 0.0f;
 }
 
+void AttributeContainer::rollback_change_set(const String &p_changeset_name) const
+{
+	buff_context->rollback(p_changeset_name);
+}
+
 void AttributeContainer::set_attribute_set(const Ref<AttributeSet> &p_attribute_set)
 {
 	attribute_set = p_attribute_set;
 	setup();
 }
 
-void AttributeContainer::set_manual_ticking(bool p_manual_ticking)
+void AttributeContainer::set_manual_ticking(const bool p_manual_ticking)
 {
 	manual_ticking = p_manual_ticking;
 }
 
-void AttributeContainer::subtract_attribute_buffs_ticks(float p_tick)
+void AttributeContainer::subtract_attribute_buffs_ticks(const float p_tick) const
 {
-	const TypedArray<RuntimeAttribute> &runtime_attributes = attributes.values();
-
-	for (int64_t i = 0; i < runtime_attributes.size(); i++) {
-		const Ref<RuntimeAttribute> &attribute = runtime_attributes[i];
-
-		if (!attribute.is_valid()) {
-			continue;
-		}
-
-		TypedArray<RuntimeBuff> buffs = attribute->get_buffs();
-
-		for (int64_t j = buffs.size() - 1; j >= 0; j--) {
-			if (const Ref<RuntimeBuff> &buff = buffs[j]; buff.is_valid() && buff->is_transient_time_based()) {
-				/// check if the buff needs a waterfall or parallel execution.
-				/// for the latter, keep the code as it is
-				/// for the first, check if another buff of the same
-				/// type exists in the queue and,
-				/// if present, avoid setting the time left.
-				if (buff->get_buff()->get_queue_execution() == AttributeBuff::QueueExecution::QUEUE_EXECUTION_WATERFALL) {
-					bool should_skip = false;
-
-					/// we act as a fifo, so let's see if there are other buffs applied before the current one.
-					for (int64_t k = j - 1; k >= 0; k--) {
-						if (const Ref<RuntimeBuff> other_buff = buffs[k]; other_buff->equals_to(buff->buff)) {
-							should_skip = true;
-							break;
-						}
-					}
-
-					if (should_skip) {
-						continue;
-					}
-				}
-
-				buff->set_time_left(buff->get_time_left() - p_tick);
-
-				emit_signal("buff_time_elapsed", buff);
-
-				if (buff->can_dequeue()) {
-					emit_signal("buff_dequeued", buff);
-					remove_buff(buff->buff);
-				}
-			}
-		}
-	}
+	buff_context->tick_operations(p_tick);
 }
 
 void AttributeContainer::_bind_methods()
@@ -428,6 +354,7 @@ void AttributeContainer::_bind_methods()
 	ClassDB::bind_method(D_METHOD("get_manual_ticking"), &AttributeContainer::get_manual_ticking);
 	ClassDB::bind_method(D_METHOD("remove_attribute", "p_attribute"), &AttributeContainer::remove_attribute);
 	ClassDB::bind_method(D_METHOD("remove_buff", "p_buff"), &AttributeContainer::remove_buff);
+	ClassDB::bind_method(D_METHOD("rollback_change_set", "p_changeset_name"), &AttributeContainer::rollback_change_set);
 	ClassDB::bind_method(D_METHOD("set_attribute_set", "p_attribute_set"), &AttributeContainer::set_attribute_set);
 	ClassDB::bind_method(D_METHOD("setup"), &AttributeContainer::setup);
 	ClassDB::bind_method(D_METHOD("set_manual_ticking", "p_manual_ticking"), &AttributeContainer::set_manual_ticking);

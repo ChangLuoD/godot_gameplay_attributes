@@ -226,10 +226,10 @@ namespace octod::gameplay::attributes
 		{
 			// Starts a queued buff as soon
 			// as it is added
-			QUEUE_EXECUTION_PARALLEL,
+			QUEUE_EXECUTION_PARALLEL = 0,
 			// Starts a queued buff as soon
 			// as the previous finished
-			QUEUE_EXECUTION_WATERFALL,
+			QUEUE_EXECUTION_WATERFALL = 1,
 		};
 
 		void apply(AttributeBuffContext *context);

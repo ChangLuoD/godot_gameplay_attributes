@@ -79,6 +79,37 @@ void AttributeDiff::_bind_methods()
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous_buff"), "set_previous_buff", "get_previous_buff");
 }
 
+bool AttributeChangeSetOperation::can_be_processed() const
+{
+	if (execution_order == AttributeBuff::QueueExecution::QUEUE_EXECUTION_WATERFALL) {
+		TypedArray<AttributeChangeSetOperation> similar_operations = change_set->attribute_buff_context->get_committed_changeset_operations_for_attribute(runtime_attribute->get_attribute_name());
+
+		if (similar_operations.size() == 1) {
+			return true;
+		}
+
+		for (int i = 0; i < similar_operations.size(); i++) {
+			const Ref<AttributeChangeSetOperation> operation = similar_operations[i];
+
+			if (operation->execution_order == AttributeBuff::QueueExecution::QUEUE_EXECUTION_WATERFALL && operation->executing) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+float AttributeChangeSetOperation::get_duration() const
+{
+	return duration;
+}
+
+int AttributeChangeSetOperation::get_execution_order() const
+{
+	return execution_order;
+}
+
 float AttributeChangeSetOperation::get_resulting_value() const
 {
 	if (runtime_attribute && attribute_operation) {
@@ -86,6 +117,11 @@ float AttributeChangeSetOperation::get_resulting_value() const
 	}
 
 	return 0.0;
+}
+
+bool AttributeChangeSetOperation::is_applied_every_tick() const
+{
+	return reapplies_every_tick;
 }
 
 void AttributeChangeSetOperation::reapply_every_tick(const bool p_reapplies_every_tick)
@@ -101,8 +137,30 @@ void AttributeChangeSetOperation::reset_duration(const bool p_resets_duration)
 void AttributeChangeSetOperation::set_duration(const float p_duration, int p_tick_type)
 {
 	duration = p_duration;
+	remaining_duration = p_duration;
 	tick_type = static_cast<AttributeChangeSetOperationTickType>(p_tick_type);
 	transient_operation = !Math::is_zero_approx(p_duration);
+}
+
+void AttributeChangeSetOperation::set_execution_order(const int p_execution_order)
+{
+	execution_order = p_execution_order;
+}
+
+void AttributeChangeSetOperation::set_remaining_duration(const float p_remaining_duration, const int p_tick_type)
+{
+	switch (p_tick_type) {
+		case TICK_MANUAL:
+		case TICK_MILLISECOND:
+			remaining_duration = p_remaining_duration;
+		case TICK_MINUTE:
+			remaining_duration = p_remaining_duration * 60000.0f;
+		case TICK_SECOND:
+			remaining_duration = p_remaining_duration * 1000.0f;
+			break;
+		default:
+			break;
+	}
 }
 
 void AttributeChangeSetOperation::set_transient(const bool p_transient)
@@ -114,17 +172,35 @@ void AttributeChangeSetOperation::set_transient(const bool p_transient)
 void AttributeChangeSetOperation::_bind_methods()
 {
 	/// binds methods to godot
+	ClassDB::bind_method(D_METHOD("get_duration"), &AttributeChangeSetOperation::get_duration);
 	ClassDB::bind_method(D_METHOD("get_resulting_value"), &AttributeChangeSetOperation::get_resulting_value);
 	ClassDB::bind_method(D_METHOD("reapply_every_tick", "reapplies_every_tick"), &AttributeChangeSetOperation::reapply_every_tick);
 	ClassDB::bind_method(D_METHOD("reset_duration", "resets_duration"), &AttributeChangeSetOperation::reset_duration);
 	ClassDB::bind_method(D_METHOD("set_duration", "duration", "unit_of_measure"), &AttributeChangeSetOperation::set_duration, DEFVAL(TICK_MILLISECOND));
+	ClassDB::bind_method(D_METHOD("set_execution_order", "execution_order"), &AttributeChangeSetOperation::set_execution_order, DEFVAL(AttributeBuff::QueueExecution::QUEUE_EXECUTION_PARALLEL));
+	ClassDB::bind_method(D_METHOD("set_remaining_duration", "remaining_duration", "unit_of_measure"), &AttributeChangeSetOperation::set_remaining_duration, DEFVAL(TICK_MILLISECOND));
 	ClassDB::bind_method(D_METHOD("set_transient", "transient"), &AttributeChangeSetOperation::set_transient);
+
+	/// bind enum constants
+	BIND_ENUM_CONSTANT(AttributeChangeSetOperationTickType::TICK_MILLISECOND);
+	BIND_ENUM_CONSTANT(AttributeChangeSetOperationTickType::TICK_SECOND);
+	BIND_ENUM_CONSTANT(AttributeChangeSetOperationTickType::TICK_MINUTE);
+	BIND_ENUM_CONSTANT(AttributeChangeSetOperationTickType::TICK_MANUAL);
 }
 
 void AttributeChangeSet::clear_persistent_operations()
 {
 	for (int64_t i = operations.size() - 1; i >= 0; i--) {
 		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !operation->transient_operation) {
+			operations.erase(i);
+		}
+	}
+}
+
+void AttributeChangeSet::clear_timed_out_operations()
+{
+	for (int64_t i = operations.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !Math::is_zero_approx(operation->duration) && operation->remaining_duration <= 0.0) {
 			operations.erase(i);
 		}
 	}
@@ -166,6 +242,7 @@ Dictionary AttributeChangeSet::prepare_diff() const
 			attribute_diff->time_based = true;
 
 			switch (operation->tick_type) {
+				case AttributeChangeSetOperation::TICK_MANUAL:
 				case AttributeChangeSetOperation::TICK_MILLISECOND:
 					attribute_diff->remaining_duration = operation->duration;
 					break;
@@ -232,6 +309,19 @@ Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_att
 	return attribute_change_set_operation;
 }
 
+void AttributeChangeSet::tick_operations(const float p_delta, const int p_tick_type)
+{
+	for (int64_t i = operations.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSetOperation> operation = operations[i]; !Math::is_zero_approx(operation->duration)) {
+			operation->set_remaining_duration(p_delta, p_tick_type);
+
+			if (Math::is_zero_approx(operation->remaining_duration) || operation->remaining_duration < 0.0) {
+				operations.erase(i);
+			}
+		}
+	}
+}
+
 void AttributeChangeSet::_bind_methods()
 {
 	/// binds methods to godot
@@ -251,6 +341,91 @@ void AttributeBuffContext::commit(const Ref<AttributeChangeSet> &p_changeset)
 	}
 
 	committed_changesets.append(p_changeset);
+}
+
+TypedArray<AttributeChangeSet> AttributeBuffContext::get_committed_changesets() const
+{
+	return committed_changesets;
+}
+
+TypedArray<AttributeChangeSet> AttributeBuffContext::get_committed_changesets_by_name(const String &p_changeset_name) const
+{
+	TypedArray<AttributeChangeSet> subset;
+
+	for (int64_t i = 0; i < committed_changesets.size(); i++) {
+		if (Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->change_set_name == p_changeset_name) {
+			subset.append(changeset);
+		}
+	}
+
+	return subset;
+}
+
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations() const
+{
+	TypedArray<AttributeChangeSetOperation> operations;
+
+	for (int i = 0; i < committed_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
+		operations.append_array(changeset_operations);
+	}
+
+	return operations;
+}
+
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations_for_attribute(const String &p_attribute_name) const
+{
+	TypedArray<AttributeChangeSetOperation> operations;
+
+	for (int i = 0; i < committed_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
+
+		for (int j = 0; j < changeset_operations.size(); j++) {
+			if (const Ref<AttributeChangeSetOperation> operation = changeset_operations[j]; operation->runtime_attribute->get_attribute_name() == p_attribute_name) {
+				operations.append(operation);
+			}
+		}
+	}
+
+	return operations;
+}
+
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations_for_attribute_with_duration(const String &p_attribute_name) const
+{
+	TypedArray<AttributeChangeSetOperation> operations;
+
+	for (int i = 0; i < committed_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
+
+		for (int j = 0; j < changeset_operations.size(); j++) {
+			if (const Ref<AttributeChangeSetOperation> operation = changeset_operations[j]; operation->runtime_attribute->get_attribute_name() == p_attribute_name && !Math::is_zero_approx(operation->duration)) {
+				operations.append(operation);
+			}
+		}
+	}
+
+	return operations;
+}
+
+TypedArray<AttributeChangeSetOperation> AttributeBuffContext::get_committed_changeset_operations_with_duration() const
+{
+	TypedArray<AttributeChangeSetOperation> operations;
+
+	for (int i = 0; i < committed_changesets.size(); i++) {
+		const Ref<AttributeChangeSet> changeset = committed_changesets[i];
+		const TypedArray<AttributeChangeSetOperation> changeset_operations = changeset->get_operations();
+
+		for (int j = 0; j < changeset_operations.size(); j++) {
+			if (const Ref<AttributeChangeSetOperation> operation = changeset_operations[j]; !Math::is_zero_approx(operation->duration)) {
+				operations.append(operation);
+			}
+		}
+	}
+
+	return operations;
 }
 
 Dictionary AttributeBuffContext::get_diff() const
@@ -398,6 +573,15 @@ void AttributeBuffContext::rollback(const String &p_changeset_name)
 void AttributeBuffContext::set_attribute_container(AttributeContainer *p_container)
 {
 	attribute_container = p_container;
+}
+
+void AttributeBuffContext::tick_operations(const float p_delta, const int p_tick_type)
+{
+	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
+		if (const Ref<AttributeChangeSet> changeset = committed_changesets[i]; changeset->has_operations()) {
+			changeset->tick_operations(p_delta, p_tick_type);
+		}
+	}
 }
 
 void AttributeBuffContext::_bind_methods()

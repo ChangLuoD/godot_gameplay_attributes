@@ -201,13 +201,14 @@ void AttributeBuff::apply(AttributeBuffContext *context)
 
 	if (GDVIRTUAL_IS_OVERRIDDEN(_apply)) {
 		GDVIRTUAL_CALL(_apply, context);
+		return;
 	}
 
 	if (!context->has_attribute(attribute_name)) {
 		return;
 	}
 
-	const Ref changeset = context->new_changeset(attribute_name);
+	const Ref changeset = context->new_changeset(buff_name);
 
 	changeset->operate(attribute_name, operation.ptr())->set_duration(duration);
 
