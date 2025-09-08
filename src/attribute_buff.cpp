@@ -316,7 +316,7 @@ void AttributeBuffContext::merge()
 	const Dictionary &diff = get_diff();
 	PackedStringArray affected_attributes = diff.keys();
 
-	for (int i = 0; i < affected_attributes.size(); i++) {
+	for (int64_t i = 0; i < affected_attributes.size(); i++) {
 		const String &attribute_name = affected_attributes[i];
 		const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
 		const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);

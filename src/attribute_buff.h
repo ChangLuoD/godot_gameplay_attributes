@@ -23,12 +23,16 @@ namespace octod::gameplay::attributes
 	class AttributeOperation;
 	class RuntimeAttribute;
 
-	class AttributeDiff : public RefCounted
+	class AttributeDiff final : public RefCounted
 	{
 		GDCLASS(AttributeDiff, RefCounted)
 
 	public:
 		String attribute_name;
+
+		double remaining_duration = 0.0;
+
+		bool time_based = false;
 
 		[[nodiscard]] bool did_change() const;
 
