@@ -42,6 +42,8 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] float get_forcefully_set_value() const;
 
+		[[nodiscard]] bool get_is_forceful() const;
+
 		[[nodiscard]] float get_previous() const;
 
 		[[nodiscard]] float get_previous_buff() const;
@@ -64,6 +66,8 @@ namespace octod::gameplay::attributes
 		float current = 0.0f;
 
 		float forcefully_set_value;
+
+		bool is_forceful;
 
 		float previous = 0.0f;
 

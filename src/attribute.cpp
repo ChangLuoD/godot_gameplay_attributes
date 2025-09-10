@@ -206,12 +206,16 @@ void AttributeBuff::apply(AttributeBuffContext *context)
 	}
 
 	if (!context->has_attribute(attribute_name)) {
+		WARN_PRINT("Attribute " + attribute_name + "not found, the buff " + buff_name + " will be ignored.");
 		return;
 	}
 
-	const Ref changeset = context->new_changeset(buff_name);
+	const Ref<AttributeChangeSet> changeset = context->new_changeset(buff_name);
+	const Ref<AttributeChangeSetOperation> attribute_changeset_operation = changeset->operate(attribute_name, *operation);
 
-	changeset->operate(attribute_name, operation.ptr())->set_duration(duration);
+	attribute_changeset_operation->set_transient(transient);
+	attribute_changeset_operation->set_duration(duration);
+	attribute_changeset_operation->set_execution_order(queue_execution);
 
 	context->commit(changeset);
 }
@@ -230,7 +234,7 @@ bool AttributeBuff::equals_to(const Ref<AttributeBuff> &buff) const
 	ERR_FAIL_COND_V_MSG(buff.is_null(), false, "Cannot compare to null AttributeBuff. This is a bug, please report it.");
 
 	return (
-		Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
+			Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
 }
 
 float AttributeBuff::operate(const float base_value) const

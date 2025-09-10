@@ -16,7 +16,11 @@ using namespace octod::gameplay::attributes;
 
 bool AttributeDiff::did_change() const
 {
-	return Math::is_equal_approx(current, previous);
+	if (is_forceful) {
+		return true;
+	}
+
+	return !Math::is_equal_approx(current, previous);
 }
 
 float AttributeDiff::get_buff() const
@@ -49,6 +53,11 @@ float AttributeDiff::get_forcefully_set_value() const
 	return forcefully_set_value;
 }
 
+bool AttributeDiff::get_is_forceful() const
+{
+	return is_forceful;
+}
+
 float AttributeDiff::get_previous() const
 {
 	return previous;
@@ -62,6 +71,7 @@ void AttributeDiff::set_current(const float p_current)
 void AttributeDiff::set_forcefully_set_value(const float p_forcefully_set_value)
 {
 	forcefully_set_value = p_forcefully_set_value;
+	is_forceful = true;
 }
 
 void AttributeDiff::set_previous(const float p_previous)
@@ -250,10 +260,13 @@ Dictionary AttributeChangeSet::prepare_diff() const
 
 	for (int i = 0; i < affected_attributes.size(); i++) {
 		const String &attribute_name = affected_attributes[i];
-		const Ref<AttributeChangeSetOperation> operation = operations[attribute_name];
+		const Ref<AttributeChangeSetOperation> operation = operations.get(attribute_name, Ref<AttributeChangeSetOperation>());
 		Ref<AttributeDiff> attribute_diff;
 		attribute_diff.instantiate();
-		diff.set(attribute_name, attribute_diff);
+
+		ERR_FAIL_NULL_V_MSG(operation, diff, "Operation on " + attribute_name + " does not exist.");
+
+		attribute_diff->attribute_name = attribute_name;
 
 		if (!Math::is_zero_approx(operation->duration)) {
 			attribute_diff->time_based = true;
@@ -297,7 +310,8 @@ Dictionary AttributeChangeSet::prepare_diff() const
 				}
 				break;
 			case OP_SET:
-				forcefully_set_value = operation->attribute_operation->operate(forcefully_set_value);
+				forcefully_set_value = operation->attribute_operation->get_value();
+				break;
 			default:
 				break;
 		}
@@ -307,6 +321,10 @@ Dictionary AttributeChangeSet::prepare_diff() const
 		attribute_diff->set_forcefully_set_value(forcefully_set_value);
 		attribute_diff->set_previous(attribute_buff_context->get_attribute(attribute_name)->get_value());
 		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
+
+		if (attribute_diff->did_change()) {
+			diff.set(attribute_name, attribute_diff);
+		}
 	}
 
 	return diff;
@@ -318,6 +336,7 @@ Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_att
 
 	ERR_FAIL_NULL_V_MSG(attribute_buff_context, attribute_change_set_operation, "This AttributeChangeSet attribute_buff_context is null, this is probably due to a manual instantiation");
 	ERR_FAIL_NULL_V_MSG(attribute_buff_context->attribute_container, attribute_change_set_operation, "This AttributeChangeSet attribute_buff_context has a null pointer to attribute_container, this is probably due to a manual instantiation");
+	ERR_FAIL_NULL_V_MSG(p_attribute_operation, attribute_change_set_operation, "AttributeOperation is null");
 
 	attribute_change_set_operation.instantiate();
 
@@ -357,11 +376,7 @@ void AttributeChangeSet::_bind_methods()
 void AttributeBuffContext::commit(const Ref<AttributeChangeSet> &p_changeset)
 {
 	ERR_FAIL_COND_MSG(p_changeset.is_null(), "This AttributeChangeSet is null");
-
-	if (!p_changeset->has_operations()) {
-		WARN_PRINT("This AttributeChangeSet was discarded since it has no operations to commit.");
-		return;
-	}
+	ERR_FAIL_COND_MSG(!p_changeset->has_operations(), "This AttributeChangeSet was discarded since it has no operations to commit.");
 
 	committed_changesets.append(p_changeset);
 }
@@ -472,9 +487,12 @@ Dictionary AttributeBuffContext::get_diff() const
 			const Ref<AttributeDiff> stored_attribute_diff = attributes_diff.get_or_add(attribute_name, attribute_diff);
 
 			if (i > 0) {
-				stored_attribute_diff->set_buff(stored_attribute_diff->get_buff() + attribute_diff->get_buff());
-				stored_attribute_diff->set_current(stored_attribute_diff->get_current() + attribute_diff->get_current());
-				stored_attribute_diff->set_forcefully_set_value(attribute_diff->get_forcefully_set_value());
+				if (attribute_diff->get_is_forceful()) {
+					stored_attribute_diff->set_forcefully_set_value(attribute_diff->get_forcefully_set_value());
+				} else {
+					stored_attribute_diff->set_buff(stored_attribute_diff->get_buff() + attribute_diff->get_buff());
+					stored_attribute_diff->set_current(stored_attribute_diff->get_current() + attribute_diff->get_current());
+				}
 			}
 		}
 	}
@@ -525,8 +543,13 @@ void AttributeBuffContext::merge()
 		const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
 		const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
 
-		runtime_attribute->set_buff(attribute_diff->get_buff());
-		runtime_attribute->set_value(attribute_diff->get_current());
+		if (attribute_diff->get_is_forceful()) {
+			runtime_attribute->set_buff(0.0);
+			runtime_attribute->set_value(attribute_diff->get_forcefully_set_value());
+		} else {
+			runtime_attribute->set_buff(attribute_diff->get_buff());
+			runtime_attribute->set_value(attribute_diff->get_current());
+		}
 
 		attribute_diff->attribute_name = attribute_name;
 
@@ -573,16 +596,14 @@ void AttributeBuffContext::notify_attributes_container()
 						"attribute_changed",
 						runtime_attribute,
 						attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
-						attribute_diff->get_current() + attribute_diff->get_buff()
-						);
+						attribute_diff->get_current() + attribute_diff->get_buff());
 			} else {
 				runtime_attribute->set_value(forcefully_set_value);
 				attribute_container->emit_signal(
 						"attribute_changed",
 						runtime_attribute,
 						attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
-						forcefully_set_value
-						);
+						forcefully_set_value);
 			}
 
 			attribute_container->notify_derived_attributes(runtime_attribute);
