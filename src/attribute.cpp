@@ -211,7 +211,7 @@ void AttributeBuff::apply(AttributeBuffContext *context)
 	}
 
 	const Ref<AttributeChangeSet> changeset = context->new_changeset(buff_name);
-	const Ref<AttributeChangeSetOperation> attribute_changeset_operation = changeset->operate(attribute_name, *operation);
+	const Ref<AttributeChangeSetOperation> attribute_changeset_operation = changeset->operate(attribute_name, operation.ptr());
 
 	attribute_changeset_operation->set_transient(transient);
 	attribute_changeset_operation->set_duration(duration);
@@ -234,7 +234,7 @@ bool AttributeBuff::equals_to(const Ref<AttributeBuff> &buff) const
 	ERR_FAIL_COND_V_MSG(buff.is_null(), false, "Cannot compare to null AttributeBuff. This is a bug, please report it.");
 
 	return (
-			Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
+		Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
 }
 
 float AttributeBuff::operate(const float base_value) const
@@ -789,34 +789,16 @@ void RuntimeBuff::set_time_left(const float p_value)
 
 Ref<RuntimeBuff> RuntimeAttribute::add_buff(const Ref<AttributeBuff> &p_buff) const
 {
-	Ref<RuntimeBuff> runtime_buff;
-
-	ERR_FAIL_COND_V_MSG(attribute_container == nullptr, runtime_buff, "AttributeContainer is null.");
-
+	WARN_DEPRECATED_MSG("this method is deprecated, use the BuffContext api on AttributeContainer instead");
+	ERR_FAIL_COND_V_MSG(attribute_container == nullptr, {}, "AttributeContainer is null.");
 	attribute_container->apply_buff(p_buff);
-
-	return runtime_buff;
+	return {};
 }
 
 bool RuntimeAttribute::can_receive_buff(const Ref<AttributeBuff> &p_buff) const
 {
-	if (p_buff->get_unique() && has_buff(p_buff)) {
-		return false;
-	}
-
-	int buffs_count = 0;
-
-	for (int i = 0; i < buffs.size(); i++) {
-		if (const Ref<RuntimeBuff> buff = buffs[i]; buff->equals_to(p_buff)) {
-			buffs_count++;
-		}
-	}
-
-	if (buffs_count >= p_buff->get_stack_size() && p_buff->get_stack_size() > 0) {
-		return false;
-	}
-
-	return p_buff->get_attribute_name() == attribute->get_attribute_name();
+	WARN_DEPRECATED_MSG("this method is deprecated, use the BuffContext api on AttributeContainer instead");
+	return true;
 }
 
 void RuntimeAttribute::compute_value()
@@ -842,7 +824,7 @@ void RuntimeAttribute::compute_value()
 
 void RuntimeAttribute::clear_buffs()
 {
-	buffs.clear();
+	WARN_DEPRECATED_MSG("this method is deprecated, use the AttributeContainer.rollback function instead.");
 }
 
 String RuntimeAttribute::get_attribute_name() const
@@ -872,24 +854,16 @@ TypedArray<RuntimeAttribute> RuntimeAttribute::get_parent_runtime_attributes() c
 
 bool RuntimeAttribute::has_buff(const Ref<AttributeBuff> &p_buff) const
 {
-	for (int i = 0; i < buffs.size(); i++) {
-		if (cast_to<RuntimeBuff>(buffs[i])->equals_to(p_buff)) {
-			return true;
-		}
-	}
-
+	WARN_DEPRECATED_MSG("this method is deprecated, use the BuffContext api on AttributeContainer instead.");
 	return false;
 }
 
 bool RuntimeAttribute::has_ongoing_buffs() const
 {
-	for (int i = 0; i < buffs.size(); i++) {
-		if (const Ref<RuntimeBuff> buff = buffs[i]; !buff->can_dequeue() && !Math::is_zero_approx(buff->get_duration())) {
-			return true;
-		}
-	}
-
-	return false;
+	WARN_DEPRECATED_MSG("this method is deprecated, use the BuffContext api on AttributeContainer instead.");
+	ERR_FAIL_NULL_V_MSG(attribute_container, false, "Attribute container is null.");
+	ERR_FAIL_NULL_V_MSG(attribute_container->get_buff_context(), false, "BuffContext on attribute container is null.");
+	return attribute_container->get_buff_context()->get_merged_changeset_operations_for_attribute(attribute->get_attribute_name()).size() > 0;
 }
 
 bool RuntimeAttribute::is_computable() const
@@ -897,17 +871,11 @@ bool RuntimeAttribute::is_computable() const
 	return GDVIRTUAL_IS_OVERRIDDEN_PTR(attribute, _compute_value);
 }
 
-bool RuntimeAttribute::remove_buff(const Ref<AttributeBuff> &p_buff)
+bool RuntimeAttribute::remove_buff(const Ref<AttributeBuff> &p_buff) const
 {
-	for (int i = 0; i < buffs.size(); i++) {
-		if (const Ref<RuntimeBuff> buff = buffs[i]; buff->equals_to(p_buff)) {
-			buffs.remove_at(i);
-			emit_signal("buff_removed", buff);
-			return true;
-		}
-	}
-
-	return false;
+	ERR_FAIL_NULL_V_MSG(attribute_container, false, "Attribute container is null.");
+	attribute_container->remove_buff(p_buff);
+	return true;
 }
 
 Ref<Attribute> RuntimeAttribute::get_attribute() const
@@ -927,30 +895,7 @@ float RuntimeAttribute::get_buff() const
 
 float RuntimeAttribute::get_buffed_value() const
 {
-	float add_sub_total = value;
-	float div_mul_multiplier = 1.0f;
-
-	for (int i = 0; i < buffs.size(); i++) {
-		const Ref<RuntimeBuff> buff = buffs[i];
-
-		if (Ref<AttributeBuff> attribute_buff = buff->get_buff(); attribute_buff.is_valid()) {
-			switch (attribute_buff->get_operation()->get_operand()) {
-				case OP_ADD:
-				case OP_SUBTRACT:
-					add_sub_total = attribute_buff->operate(add_sub_total);
-					break;
-				case OP_MULTIPLY:
-				case OP_DIVIDE:
-				case OP_PERCENTAGE:
-					div_mul_multiplier = attribute_buff->operate(div_mul_multiplier);
-					break;
-				default:
-					break;
-			}
-		}
-	}
-
-	return add_sub_total * div_mul_multiplier;
+	return buff_value + value;
 }
 
 TypedArray<AttributeBase> RuntimeAttribute::get_derived_from() const
@@ -976,7 +921,8 @@ float RuntimeAttribute::get_value() const
 
 TypedArray<RuntimeBuff> RuntimeAttribute::get_buffs() const
 {
-	return buffs;
+	WARN_DEPRECATED_MSG("this function is deprecated, use BuffContext api on the attribute container");
+	return {};
 }
 
 void RuntimeAttribute::set_attribute(const Ref<AttributeBase> &p_value)

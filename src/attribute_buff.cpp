@@ -20,12 +20,12 @@ bool AttributeDiff::did_change() const
 		return true;
 	}
 
-	return !Math::is_equal_approx(current, previous);
+	return !Math::is_equal_approx(current_value, previous_value);
 }
 
-float AttributeDiff::get_buff() const
+float AttributeDiff::get_current_buff() const
 {
-	return buff;
+	return current_buff;
 }
 
 float AttributeDiff::get_previous_buff() const
@@ -33,9 +33,9 @@ float AttributeDiff::get_previous_buff() const
 	return previous_buff;
 }
 
-void AttributeDiff::set_buff(const float p_buff)
+void AttributeDiff::set_current_buff(const float p_buff)
 {
-	buff = p_buff;
+	current_buff = p_buff;
 }
 
 void AttributeDiff::set_previous_buff(const float p_previous_buff)
@@ -43,9 +43,9 @@ void AttributeDiff::set_previous_buff(const float p_previous_buff)
 	previous_buff = p_previous_buff;
 }
 
-float AttributeDiff::get_current() const
+float AttributeDiff::get_current_value() const
 {
-	return current;
+	return current_value;
 }
 
 float AttributeDiff::get_forcefully_set_value() const
@@ -58,14 +58,14 @@ bool AttributeDiff::get_is_forceful() const
 	return is_forceful;
 }
 
-float AttributeDiff::get_previous() const
+float AttributeDiff::get_previous_value() const
 {
-	return previous;
+	return previous_value;
 }
 
 void AttributeDiff::set_current(const float p_current)
 {
-	current = p_current;
+	current_value = p_current;
 }
 
 void AttributeDiff::set_forcefully_set_value(const float p_forcefully_set_value)
@@ -76,19 +76,19 @@ void AttributeDiff::set_forcefully_set_value(const float p_forcefully_set_value)
 
 void AttributeDiff::set_previous(const float p_previous)
 {
-	previous = p_previous;
+	previous_value = p_previous;
 }
 
 void AttributeDiff::_bind_methods()
 {
 	/// binds methods to godot
 	ClassDB::bind_method(D_METHOD("did_change"), &AttributeDiff::did_change);
-	ClassDB::bind_method(D_METHOD("get_buff"), &AttributeDiff::get_buff);
-	ClassDB::bind_method(D_METHOD("get_current"), &AttributeDiff::get_current);
+	ClassDB::bind_method(D_METHOD("get_buff"), &AttributeDiff::get_current_buff);
+	ClassDB::bind_method(D_METHOD("get_current"), &AttributeDiff::get_current_value);
 	ClassDB::bind_method(D_METHOD("get_forcefully_set_value"), &AttributeDiff::get_forcefully_set_value);
-	ClassDB::bind_method(D_METHOD("get_previous"), &AttributeDiff::get_previous);
+	ClassDB::bind_method(D_METHOD("get_previous"), &AttributeDiff::get_previous_value);
 	ClassDB::bind_method(D_METHOD("get_previous_buff"), &AttributeDiff::get_previous_buff);
-	ClassDB::bind_method(D_METHOD("set_buff", "buff"), &AttributeDiff::set_buff);
+	ClassDB::bind_method(D_METHOD("set_buff", "buff"), &AttributeDiff::set_current_buff);
 	ClassDB::bind_method(D_METHOD("set_current", "current"), &AttributeDiff::set_current);
 	ClassDB::bind_method(D_METHOD("set_forcefully_set_value", "forcefully_set_value"), &AttributeDiff::set_forcefully_set_value);
 	ClassDB::bind_method(D_METHOD("set_previous", "previous"), &AttributeDiff::set_previous);
@@ -160,9 +160,10 @@ void AttributeChangeSetOperation::reset_duration(const bool p_resets_duration)
 void AttributeChangeSetOperation::set_duration(const float p_duration, int p_tick_type)
 {
 	duration = p_duration;
-	remaining_duration = p_duration;
 	tick_type = static_cast<AttributeChangeSetOperationTickType>(p_tick_type);
 	transient_operation = !Math::is_zero_approx(p_duration);
+
+	set_remaining_duration(p_duration, p_tick_type);
 }
 
 void AttributeChangeSetOperation::set_execution_order(const int p_execution_order)
@@ -190,6 +191,11 @@ void AttributeChangeSetOperation::set_transient(const bool p_transient)
 {
 	ERR_FAIL_COND_MSG(!Math::is_zero_approx(duration) && !p_transient, "Cannot mark this operation as not transient if its duration is is not 0.0.");
 	transient_operation = p_transient;
+}
+
+void AttributeChangeSetOperation::subtract_remaining_duration(const float p_subtract_duration)
+{
+	remaining_duration -= p_subtract_duration;
 }
 
 void AttributeChangeSetOperation::_bind_methods()
@@ -227,7 +233,7 @@ void AttributeChangeSet::clear_timed_out_operations()
 	TypedArray<AttributeChangeSetOperation> operation_values = get_operations();
 
 	for (int64_t i = operation_values.size() - 1; i >= 0; i--) {
-		if (const Ref<AttributeChangeSetOperation> operation = operation_values[i]; operation.is_valid() && !Math::is_zero_approx(operation->duration) && operation->remaining_duration <= 0.0) {
+		if (const Ref<AttributeChangeSetOperation> operation = operation_values[i]; operation.is_valid() && !Math::is_zero_approx(operation->duration) && Math::is_zero_approx(operation->remaining_duration)) {
 			operations.erase(operation);
 		}
 	}
@@ -316,8 +322,8 @@ Dictionary AttributeChangeSet::prepare_diff() const
 				break;
 		}
 
-		attribute_diff->set_buff(transient_additive_buff + (operation->runtime_attribute->get_value() * transient_multiplicative_buff));
-		attribute_diff->set_current((permanent_additive_buff * permanent_multiplicative_buff));
+		attribute_diff->set_current_buff(transient_additive_buff * transient_multiplicative_buff);
+		attribute_diff->set_current(permanent_additive_buff * permanent_multiplicative_buff);
 		attribute_diff->set_forcefully_set_value(forcefully_set_value);
 		attribute_diff->set_previous(attribute_buff_context->get_attribute(attribute_name)->get_value());
 		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
@@ -355,9 +361,9 @@ void AttributeChangeSet::tick_operations(const float p_delta, const int p_tick_t
 
 	for (int64_t i = operation_values.size() - 1; i >= 0; i--) {
 		if (const Ref<AttributeChangeSetOperation> operation = operation_values[i]; !Math::is_zero_approx(operation->duration)) {
-			operation->set_remaining_duration(p_delta, p_tick_type);
+			operation->subtract_remaining_duration(p_delta);
 
-			if (Math::is_zero_approx(operation->remaining_duration) || operation->remaining_duration < 0.0) {
+			if (Math::is_zero_approx(operation->remaining_duration) || Math::is_zero_approx(operation->remaining_duration)) {
 				operations.erase(operation);
 			}
 		}
@@ -490,8 +496,8 @@ Dictionary AttributeBuffContext::get_diff() const
 				if (attribute_diff->get_is_forceful()) {
 					stored_attribute_diff->set_forcefully_set_value(attribute_diff->get_forcefully_set_value());
 				} else {
-					stored_attribute_diff->set_buff(stored_attribute_diff->get_buff() + attribute_diff->get_buff());
-					stored_attribute_diff->set_current(stored_attribute_diff->get_current() + attribute_diff->get_current());
+					stored_attribute_diff->set_current_buff(stored_attribute_diff->get_current_buff() + attribute_diff->get_current_buff());
+					stored_attribute_diff->set_current(stored_attribute_diff->get_current_value() + attribute_diff->get_current_value());
 				}
 			}
 		}
@@ -543,17 +549,10 @@ void AttributeBuffContext::merge()
 		const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
 		const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
 
-		if (attribute_diff->get_is_forceful()) {
-			runtime_attribute->set_buff(0.0);
-			runtime_attribute->set_value(attribute_diff->get_forcefully_set_value());
-		} else {
-			runtime_attribute->set_buff(attribute_diff->get_buff());
-			runtime_attribute->set_value(attribute_diff->get_current());
+		if (attribute_diff->did_change()) {
+			attribute_diff->attribute_name = attribute_name;
+			diffs_to_notify.push_back(attribute_diff);
 		}
-
-		attribute_diff->attribute_name = attribute_name;
-
-		diffs_to_notify.push_back(attribute_diff);
 	}
 
 	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
@@ -589,27 +588,15 @@ void AttributeBuffContext::notify_attributes_container()
 		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
 			Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_diff->attribute_name);
 
-			if (!attribute_diff->did_change()) {
-				continue;
-			}
+			runtime_attribute->set_buff(attribute_diff->get_current_buff());
 
-			if (float forcefully_set_value = attribute_diff->get_forcefully_set_value(); !Math::is_zero_approx(forcefully_set_value)) {
-				runtime_attribute->set_buff(attribute_diff->get_buff());
-				runtime_attribute->set_value(attribute_diff->get_current());
-				attribute_container->emit_signal(
-						"attribute_changed",
-						runtime_attribute,
-						attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
-						attribute_diff->get_current() + attribute_diff->get_buff());
+			if (attribute_diff->get_is_forceful()) {
+				runtime_attribute->set_value(attribute_diff->get_forcefully_set_value());
 			} else {
-				runtime_attribute->set_value(forcefully_set_value);
-				attribute_container->emit_signal(
-						"attribute_changed",
-						runtime_attribute,
-						attribute_diff->get_previous() + attribute_diff->get_previous_buff(),
-						forcefully_set_value);
+				runtime_attribute->set_value(attribute_diff->get_current_value());
 			}
 
+			attribute_container->emit_signal("attribute_changed", runtime_attribute, runtime_attribute->get_previous_value(), runtime_attribute->get_value());
 			attribute_container->notify_derived_attributes(runtime_attribute);
 		}
 	}
@@ -631,7 +618,7 @@ void AttributeBuffContext::rollback(const String &p_changeset_name)
 				const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
 				const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
 
-				runtime_attribute->set_buff(runtime_attribute->get_buff() - attribute_diff->get_buff());
+				runtime_attribute->set_buff(runtime_attribute->get_buff() - attribute_diff->get_current_buff());
 			}
 
 			merged_changesets.erase(i);

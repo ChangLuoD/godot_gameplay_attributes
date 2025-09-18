@@ -152,14 +152,14 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 			ERR_FAIL_COND_MSG(!runtime_attribute.is_valid(), "Attribute not valid at index " + itos(i));
 
 			String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
-			const String change_set_name = attribute_name + "/" + p_buff->get_buff_name();
-			Ref<AttributeChangeSet> attribute_change_set = buff_context->new_changeset(change_set_name);
+			const String changeset_name = attribute_name + "/" + p_buff->get_buff_name();
+			Ref<AttributeChangeSet> attribute_change_set = buff_context->new_changeset(changeset_name);
 
-			if (p_buff->get_unique() && buff_context->has_changeset(change_set_name)) {
+			if (p_buff->get_unique() && buff_context->has_changeset(changeset_name)) {
 				continue;
 			}
 
-			if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_merged_changesets_by_name(change_set_name).size() >= max_stack_size) {
+			if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_merged_changesets_by_name(changeset_name).size() >= max_stack_size) {
 				continue;
 			}
 
@@ -171,7 +171,7 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 
 			switch (p_buff->get_duration_merging()) {
 				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD: {
-					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(change_set_name);
+					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
 
 					for (int j = 0; j < other_changesets.size(); j++) {
 						const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
@@ -185,7 +185,7 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 				}
 				break;
 				case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
-					buff_context->rollback(change_set_name);
+					buff_context->rollback(changeset_name);
 					break;
 				case AttributeBuff::DurationMerging::DURATION_MERGE_STACK:
 				default:
@@ -197,6 +197,18 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 	} else {
 		p_buff->apply(buff_context.ptr());
 	}
+}
+
+Ref<AttributeBuffContext> AttributeContainer::get_buff_context() const
+{
+	buff_context->
+	return buff_context;
+}
+
+bool AttributeContainer::has_changeset(const String& p_changeset) const
+{
+	ERR_FAIL_NULL_V_MSG(buff_context, false, "Buff context is null");
+	return buff_context->has_changeset(p_changeset);
 }
 
 void AttributeContainer::remove_attribute(const Ref<AttributeBase> &p_attribute)

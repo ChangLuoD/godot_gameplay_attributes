@@ -13,7 +13,7 @@ func _ready() -> void:
 	attribute_container.apply_buff(SetInitialValueBuff.create(HealthAttribute.ATTRIBUTE_NAME, 10.0))
 	
 	attribute_container.attribute_changed.connect(func (runtime_attribute: RuntimeAttribute, prev_value: float, next_value: float) -> void:
-		print(runtime_attribute.get_attribute_name(), prev_value, next_value)	
+		print(runtime_attribute.get_attribute_name(), " has changed from ", prev_value, " to ", next_value)	
 	)
 	
 	# oh yes, the output

@@ -565,7 +565,7 @@ namespace octod::gameplay::attributes
 		/// @param p_buff The buff to remove.
 		/// @return True if the buff was removed, false otherwise.
 		/// @deprecated
-		bool remove_buff(const Ref<AttributeBuff> &p_buff);
+		[[nodiscard]] bool remove_buff(const Ref<AttributeBuff> &p_buff) const;
 
 		/// @brief Get the attribute.
 		/// @return The attribute.

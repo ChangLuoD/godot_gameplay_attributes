@@ -39,6 +39,8 @@ namespace octod::gameplay::attributes
 		/// @param p_buff The buff to add.
 		void apply_buff(const Ref<AttributeBuff> &p_buff) const;
 
+		Ref<AttributeBuffContext> get_buff_context() const;
+
 		/// @brief Removes an attribute from the container.
 		/// @param p_attribute The attribute to remove.
 		void remove_attribute(const Ref<AttributeBase> &p_attribute);
@@ -64,6 +66,8 @@ namespace octod::gameplay::attributes
 		/// @param p_predicate The predicate to use to find the attribute value.
 		/// @return The attribute value found.
 		[[nodiscard]] float find_value(const Callable &p_predicate) const;
+
+		[[nodiscard]] bool has_changeset(const String& p_changeset) const;
 
 		// getters/setters
 		/// @brief Returns the attributes of the container.

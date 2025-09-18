@@ -36,19 +36,19 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] bool did_change() const;
 
-		[[nodiscard]] float get_buff() const;
+		[[nodiscard]] float get_current_buff() const;
 
-		[[nodiscard]] float get_current() const;
+		[[nodiscard]] float get_current_value() const;
 
 		[[nodiscard]] float get_forcefully_set_value() const;
 
 		[[nodiscard]] bool get_is_forceful() const;
 
-		[[nodiscard]] float get_previous() const;
+		[[nodiscard]] float get_previous_value() const;
 
 		[[nodiscard]] float get_previous_buff() const;
 
-		void set_buff(float p_buff);
+		void set_current_buff(float p_buff);
 
 		void set_current(float p_current);
 
@@ -61,15 +61,15 @@ namespace octod::gameplay::attributes
 	protected:
 		static void _bind_methods();
 
-		float buff = 0.0f;
+		float current_buff = 0.0f;
 
-		float current = 0.0f;
+		float current_value = 0.0f;
 
 		float forcefully_set_value;
 
 		bool is_forceful;
 
-		float previous = 0.0f;
+		float previous_value = 0.0f;
 
 		float previous_buff = 0.0f;
 	};
@@ -108,6 +108,8 @@ namespace octod::gameplay::attributes
 		void set_remaining_duration(float p_remaining_duration, int p_tick_type = TICK_MILLISECOND);
 
 		void set_transient(bool p_transient);
+
+		void subtract_remaining_duration(float p_subtract_duration);
 
 	protected:
 		friend class AttributeChangeSet;
