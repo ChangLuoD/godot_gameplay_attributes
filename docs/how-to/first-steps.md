@@ -54,7 +54,7 @@ func _compute_value(argument: AttributeComputationArgument) -> float:
     var max_health_attribute := parent_attributes[0] ## since the array is ordered as we defined in _derived_from
     
     # Clamp the value between 0 (min health, fixed value) and MaxHealthAttribute's value
-    return clamp(value, 0, max_health_attribute.get_buffed_value()) ## we asked for the buffed value, so if the max health increases, the maximum value of health will be able to increase too.
+    return clamp(argument.operated_value, 0, max_health_attribute.get_buffed_value()) ## we asked for the buffed value, so if the max health increases, the maximum value of health will be able to increase too.
 ```
 
 ## Instancing the attributes as resources
