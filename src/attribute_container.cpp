@@ -201,7 +201,6 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 
 Ref<AttributeBuffContext> AttributeContainer::get_buff_context() const
 {
-	buff_context->
 	return buff_context;
 }
 
