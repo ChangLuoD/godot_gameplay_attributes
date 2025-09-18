@@ -589,6 +589,10 @@ void AttributeBuffContext::notify_attributes_container()
 		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
 			Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_diff->attribute_name);
 
+			if (!attribute_diff->did_change()) {
+				continue;
+			}
+
 			if (float forcefully_set_value = attribute_diff->get_forcefully_set_value(); !Math::is_zero_approx(forcefully_set_value)) {
 				runtime_attribute->set_buff(attribute_diff->get_buff());
 				runtime_attribute->set_value(attribute_diff->get_current());
