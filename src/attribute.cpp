@@ -211,7 +211,7 @@ void AttributeBuff::apply(AttributeBuffContext *context)
 	}
 
 	const Ref<AttributeChangeSet> changeset = context->new_changeset(buff_name);
-	const Ref<AttributeChangeSetOperation> attribute_changeset_operation = changeset->operate(attribute_name, operation.ptr());
+	const Ref<AttributeChangeSetOperation> attribute_changeset_operation = changeset->operate(attribute_name, *operation);
 
 	attribute_changeset_operation->set_transient(transient);
 	attribute_changeset_operation->set_duration(duration);
@@ -817,7 +817,6 @@ void RuntimeAttribute::compute_value()
 
 		if (!Math::is_equal_approx(_previous_value, value)) {
 			previous_value = _previous_value;
-			emit_signal("attribute_changed", this, previous_value, value);
 		}
 	}
 }

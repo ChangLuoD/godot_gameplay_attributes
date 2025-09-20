@@ -40,8 +40,6 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] float get_current_value() const;
 
-		[[nodiscard]] float get_forcefully_set_value() const;
-
 		[[nodiscard]] bool get_is_forceful() const;
 
 		[[nodiscard]] float get_previous_value() const;
@@ -50,9 +48,7 @@ namespace octod::gameplay::attributes
 
 		void set_current_buff(float p_buff);
 
-		void set_current(float p_current);
-
-		void set_forcefully_set_value(float p_forcefully_set_value);
+		void set_current(float p_current, bool p_forceful_set = false);
 
 		void set_previous(float p_previous);
 
@@ -64,8 +60,6 @@ namespace octod::gameplay::attributes
 		float current_buff = 0.0f;
 
 		float current_value = 0.0f;
-
-		float forcefully_set_value;
 
 		bool is_forceful;
 
@@ -87,6 +81,15 @@ namespace octod::gameplay::attributes
 			TICK_MANUAL = 3,
 		};
 
+		struct OperationResult
+		{
+			bool is_forceful = false;
+			float permanent_additive_buff = 0.0;
+			float permanent_multiplicative_buff = 1.0f;
+			float transient_additive_buff = 0.0;
+			float transient_multiplicative_buff = 1.0f;
+		};
+
 		[[nodiscard]] bool can_be_processed() const;
 
 		[[nodiscard]] float get_duration() const;
@@ -94,6 +97,8 @@ namespace octod::gameplay::attributes
 		[[nodiscard]] int get_execution_order() const;
 
 		[[nodiscard]] float get_resulting_value() const;
+
+		[[nodiscard]] OperationResult get_resulting_value_struct() const;
 
 		[[nodiscard]] bool is_applied_every_tick() const;
 
@@ -118,8 +123,6 @@ namespace octod::gameplay::attributes
 
 		static void _bind_methods();
 
-		AttributeOperation *attribute_operation = nullptr;
-
 		AttributeChangeSet *change_set = nullptr;
 
 		float duration = 0.0;
@@ -127,6 +130,10 @@ namespace octod::gameplay::attributes
 		bool executing = false;
 
 		int execution_order = 0;
+
+		int operation_sign = 0;
+
+		float operation_value = 0.0;
 
 		float remaining_duration = 0.0;
 
@@ -160,9 +167,9 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] Dictionary prepare_diff() const;
 
-		Ref<AttributeChangeSetOperation> operate(const String &p_attribute_name, AttributeOperation *p_attribute_operation);
+		Ref<AttributeChangeSetOperation> operate(const String &p_attribute_name, const AttributeOperation *p_attribute_operation);
 
-		void tick_operations(float p_delta, int p_tick_type = AttributeChangeSetOperation::TICK_MILLISECOND);
+		void tick_operations(float p_delta);
 
 	protected:
 		friend class AttributeBuffContext;
@@ -212,8 +219,6 @@ namespace octod::gameplay::attributes
 		void merge();
 
 		Ref<AttributeChangeSet> new_changeset(const String &p_changeset_name = "");
-
-		void notify_attributes_container();
 
 		void rollback(const String &p_changeset_name);
 

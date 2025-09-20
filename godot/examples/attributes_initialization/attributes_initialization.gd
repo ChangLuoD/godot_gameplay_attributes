@@ -14,8 +14,14 @@ func _ready() -> void:
 	
 	attribute_container.attribute_changed.connect(func (runtime_attribute: RuntimeAttribute, prev_value: float, next_value: float) -> void:
 		print(runtime_attribute.get_attribute_name(), " has changed from ", prev_value, " to ", next_value)	
+		render_label()
 	)
 	
+	# oh yes, the output
+	render_label()
+
+
+func render_label() -> void:
 	# oh yes, the output
 	label.text = "Health attribute is {0}/{1} (health/max health)".format({
 		0: attribute_container.get_attribute_value_by_name(HealthAttribute.ATTRIBUTE_NAME),

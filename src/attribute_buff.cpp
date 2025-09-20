@@ -8,9 +8,18 @@
 /* Read the license file in this repo.						              */
 /**************************************************************************/
 
+// ReSharper disable CppUseStructuredBinding
 #include "attribute_buff.h"
 #include "attribute.hpp"
 #include "attribute_container.hpp"
+
+#ifndef MINUTE
+#define MINUTE 60000.00f
+#endif
+
+#ifndef SECOND
+#define SECOND 1000.00f
+#endif
 
 using namespace octod::gameplay::attributes;
 
@@ -20,7 +29,7 @@ bool AttributeDiff::did_change() const
 		return true;
 	}
 
-	return !Math::is_equal_approx(current_value, previous_value);
+	return !Math::is_equal_approx(current_value + current_buff, previous_value + previous_buff);
 }
 
 float AttributeDiff::get_current_buff() const
@@ -35,22 +44,25 @@ float AttributeDiff::get_previous_buff() const
 
 void AttributeDiff::set_current_buff(const float p_buff)
 {
+	if (is_forceful) {
+		return;
+	}
+
 	current_buff = p_buff;
 }
 
 void AttributeDiff::set_previous_buff(const float p_previous_buff)
 {
+	if (is_forceful) {
+		return;
+	}
+
 	previous_buff = p_previous_buff;
 }
 
 float AttributeDiff::get_current_value() const
 {
 	return current_value;
-}
-
-float AttributeDiff::get_forcefully_set_value() const
-{
-	return forcefully_set_value;
 }
 
 bool AttributeDiff::get_is_forceful() const
@@ -63,43 +75,27 @@ float AttributeDiff::get_previous_value() const
 	return previous_value;
 }
 
-void AttributeDiff::set_current(const float p_current)
+void AttributeDiff::set_current(const float p_current, const bool p_forceful_set)
 {
-	current_value = p_current;
-}
+	if (is_forceful && !p_forceful_set) {
+		return;
+	}
 
-void AttributeDiff::set_forcefully_set_value(const float p_forcefully_set_value)
-{
-	forcefully_set_value = p_forcefully_set_value;
-	is_forceful = true;
+	current_value = p_current;
+	is_forceful = p_forceful_set;
 }
 
 void AttributeDiff::set_previous(const float p_previous)
 {
+	if (is_forceful) {
+		return;
+	}
+
 	previous_value = p_previous;
 }
 
 void AttributeDiff::_bind_methods()
 {
-	/// binds methods to godot
-	ClassDB::bind_method(D_METHOD("did_change"), &AttributeDiff::did_change);
-	ClassDB::bind_method(D_METHOD("get_buff"), &AttributeDiff::get_current_buff);
-	ClassDB::bind_method(D_METHOD("get_current"), &AttributeDiff::get_current_value);
-	ClassDB::bind_method(D_METHOD("get_forcefully_set_value"), &AttributeDiff::get_forcefully_set_value);
-	ClassDB::bind_method(D_METHOD("get_previous"), &AttributeDiff::get_previous_value);
-	ClassDB::bind_method(D_METHOD("get_previous_buff"), &AttributeDiff::get_previous_buff);
-	ClassDB::bind_method(D_METHOD("set_buff", "buff"), &AttributeDiff::set_current_buff);
-	ClassDB::bind_method(D_METHOD("set_current", "current"), &AttributeDiff::set_current);
-	ClassDB::bind_method(D_METHOD("set_forcefully_set_value", "forcefully_set_value"), &AttributeDiff::set_forcefully_set_value);
-	ClassDB::bind_method(D_METHOD("set_previous", "previous"), &AttributeDiff::set_previous);
-	ClassDB::bind_method(D_METHOD("set_previous_buff", "previous_buff"), &AttributeDiff::set_previous_buff);
-
-	/// binds properties to godot
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "buff"), "set_buff", "get_buff");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "current"), "set_current", "get_current");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "forcefully_set_value"), "set_forcefully_set_value", "get_forcefully_set_value");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous"), "set_previous", "get_previous");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "previous_buff"), "set_previous_buff", "get_previous_buff");
 }
 
 bool AttributeChangeSetOperation::can_be_processed() const
@@ -135,11 +131,74 @@ int AttributeChangeSetOperation::get_execution_order() const
 
 float AttributeChangeSetOperation::get_resulting_value() const
 {
-	if (runtime_attribute && attribute_operation) {
-		return attribute_operation->operate(runtime_attribute->get_buffed_value());
+	if (runtime_attribute == nullptr) {
+		ERR_FAIL_COND_V_MSG(true, 0.0f, "runtime attribute is null on this AttributeChangeSetOperation. This is probably due to a manual instantiation.");
 	}
 
-	return 0.0;
+	const OperationResult result = get_resulting_value_struct();
+
+	if (result.is_forceful) {
+		return result.permanent_additive_buff;
+	}
+
+	return (runtime_attribute->get_value() + result.transient_additive_buff + result.permanent_additive_buff) * (result.transient_multiplicative_buff + result.permanent_multiplicative_buff);
+}
+
+AttributeChangeSetOperation::OperationResult AttributeChangeSetOperation::get_resulting_value_struct() const
+{
+	OperationResult result;
+
+	switch (operation_sign) {
+		case OP_ADD:
+			if (transient_operation) {
+				result.transient_additive_buff += operation_value;
+			} else {
+				result.permanent_additive_buff += operation_value;
+			}
+			break;
+		case OP_SUBTRACT:
+			if (transient_operation) {
+				result.transient_additive_buff -= operation_value;
+			} else {
+				result.permanent_additive_buff -= operation_value;
+			}
+			break;
+		case OP_MULTIPLY:
+			if (transient_operation) {
+				result.transient_multiplicative_buff *= operation_value;
+			} else {
+				result.permanent_multiplicative_buff *= operation_value;
+			}
+			break;
+		case OP_DIVIDE:
+			{
+				if (Math::is_zero_approx(operation_value)) {
+					break;
+				}
+
+				if (transient_operation) {
+					result.transient_multiplicative_buff /= operation_value;
+				} else {
+					result.permanent_multiplicative_buff /= operation_value;
+				}
+				break;
+			}
+		case OP_PERCENTAGE:
+			if (transient_operation) {
+				result.transient_multiplicative_buff *= operation_value * 100.0f;
+			} else {
+				result.permanent_multiplicative_buff *= operation_value * 100.0f;
+			}
+			break;
+		case OP_SET:
+			result.is_forceful = true;
+			result.permanent_additive_buff = operation_value;
+			break;
+		default:
+			break;
+	}
+
+	return result;
 }
 
 bool AttributeChangeSetOperation::is_applied_every_tick() const
@@ -178,9 +237,9 @@ void AttributeChangeSetOperation::set_remaining_duration(const float p_remaining
 		case TICK_MILLISECOND:
 			remaining_duration = p_remaining_duration;
 		case TICK_MINUTE:
-			remaining_duration = p_remaining_duration * 60000.0f;
+			remaining_duration = p_remaining_duration * MINUTE;
 		case TICK_SECOND:
-			remaining_duration = p_remaining_duration * 1000.0f;
+			remaining_duration = p_remaining_duration * SECOND;
 			break;
 		default:
 			break;
@@ -262,11 +321,10 @@ bool AttributeChangeSet::is_operating_attribute(const String &p_attribute_name) 
 Dictionary AttributeChangeSet::prepare_diff() const
 {
 	Dictionary diff;
-	PackedStringArray affected_attributes = get_affected_attributes();
+	PackedStringArray affected_attributes = operations.keys();
 
-	for (int i = 0; i < affected_attributes.size(); i++) {
-		const String &attribute_name = affected_attributes[i];
-		const Ref<AttributeChangeSetOperation> operation = operations.get(attribute_name, Ref<AttributeChangeSetOperation>());
+	for (const Ref<AttributeChangeSetOperation> operation : operations.values()) {
+		const String &attribute_name = operation->runtime_attribute->get_attribute_name();
 		Ref<AttributeDiff> attribute_diff;
 		attribute_diff.instantiate();
 
@@ -283,48 +341,18 @@ Dictionary AttributeChangeSet::prepare_diff() const
 					attribute_diff->remaining_duration = operation->duration;
 					break;
 				case AttributeChangeSetOperation::TICK_SECOND:
-					attribute_diff->remaining_duration = operation->duration * 1000.0;
+					attribute_diff->remaining_duration = operation->duration * SECOND;
 					break;
 				case AttributeChangeSetOperation::TICK_MINUTE:
-					attribute_diff->remaining_duration = operation->duration * 60000.0;
+					attribute_diff->remaining_duration = operation->duration * MINUTE;
 					break;
 			}
 		}
 
-		float forcefully_set_value = 0.0;
-		float permanent_additive_buff = 0.0;
-		float permanent_multiplicative_buff = 1.0;
-		float transient_additive_buff = 0.0;
-		float transient_multiplicative_buff = 1.0;
+		const AttributeChangeSetOperation::OperationResult result = operation->get_resulting_value_struct();
 
-		switch (operation->attribute_operation->get_operand()) {
-			case OP_ADD:
-			case OP_SUBTRACT:
-				if (operation->transient_operation) {
-					transient_additive_buff = operation->attribute_operation->operate(transient_additive_buff);
-				} else {
-					permanent_additive_buff = operation->attribute_operation->operate(permanent_additive_buff);
-				}
-				break;
-			case OP_MULTIPLY:
-			case OP_DIVIDE:
-			case OP_PERCENTAGE:
-				if (operation->transient_operation) {
-					transient_multiplicative_buff = operation->attribute_operation->operate(transient_multiplicative_buff);
-				} else {
-					permanent_multiplicative_buff = operation->attribute_operation->operate(permanent_multiplicative_buff);
-				}
-				break;
-			case OP_SET:
-				forcefully_set_value = operation->attribute_operation->get_value();
-				break;
-			default:
-				break;
-		}
-
-		attribute_diff->set_current_buff(transient_additive_buff * transient_multiplicative_buff);
-		attribute_diff->set_current(permanent_additive_buff * permanent_multiplicative_buff);
-		attribute_diff->set_forcefully_set_value(forcefully_set_value);
+		attribute_diff->set_current_buff(result.transient_additive_buff * result.transient_multiplicative_buff);
+		attribute_diff->set_current(result.permanent_additive_buff * result.permanent_multiplicative_buff, result.is_forceful);
 		attribute_diff->set_previous(attribute_buff_context->get_attribute(attribute_name)->get_value());
 		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
 
@@ -336,7 +364,7 @@ Dictionary AttributeChangeSet::prepare_diff() const
 	return diff;
 }
 
-Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_attribute_name, AttributeOperation *p_attribute_operation)
+Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_attribute_name, const AttributeOperation *p_attribute_operation)
 {
 	Ref<AttributeChangeSetOperation> attribute_change_set_operation;
 
@@ -346,8 +374,9 @@ Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_att
 
 	attribute_change_set_operation.instantiate();
 
-	attribute_change_set_operation->attribute_operation = p_attribute_operation;
 	attribute_change_set_operation->change_set = this;
+	attribute_change_set_operation->operation_sign = p_attribute_operation->get_operand();
+	attribute_change_set_operation->operation_value = p_attribute_operation->get_value();
 	attribute_change_set_operation->runtime_attribute = attribute_buff_context->attribute_container->get_runtime_attribute_by_name(p_attribute_name).ptr();
 
 	operations.set(p_attribute_name, attribute_change_set_operation);
@@ -355,7 +384,7 @@ Ref<AttributeChangeSetOperation> AttributeChangeSet::operate(const String &p_att
 	return attribute_change_set_operation;
 }
 
-void AttributeChangeSet::tick_operations(const float p_delta, const int p_tick_type)
+void AttributeChangeSet::tick_operations(const float p_delta)
 {
 	TypedArray<AttributeChangeSetOperation> operation_values = get_operations();
 
@@ -494,7 +523,7 @@ Dictionary AttributeBuffContext::get_diff() const
 
 			if (i > 0) {
 				if (attribute_diff->get_is_forceful()) {
-					stored_attribute_diff->set_forcefully_set_value(attribute_diff->get_forcefully_set_value());
+					stored_attribute_diff->set_current(attribute_diff->get_current_value(), true);
 				} else {
 					stored_attribute_diff->set_current_buff(stored_attribute_diff->get_current_buff() + attribute_diff->get_current_buff());
 					stored_attribute_diff->set_current(stored_attribute_diff->get_current_value() + attribute_diff->get_current_value());
@@ -560,15 +589,25 @@ void AttributeBuffContext::merge()
 
 		changeset->clear_persistent_operations();
 
-		if (!changeset->has_operations()) {
-			committed_changesets.remove_at(i);
-		} else {
+		if (changeset->has_operations()) {
 			merged_changesets.append(changeset);
+		} else {
+			committed_changesets.remove_at(i);
+		}
+	}
+
+	for (int i = 0; i < diffs_to_notify.size(); i++) {
+		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
+			attribute_container->alter_attribute(
+					attribute_diff->attribute_name,
+					attribute_diff->get_current_buff(),
+					attribute_diff->get_current_value(),
+					attribute_diff->get_is_forceful());
 		}
 	}
 
 	committed_changesets.clear();
-	notify_attributes_container();
+	diffs_to_notify.clear();
 }
 
 Ref<AttributeChangeSet> AttributeBuffContext::new_changeset(const String &p_changeset_name)
@@ -582,28 +621,6 @@ Ref<AttributeChangeSet> AttributeBuffContext::new_changeset(const String &p_chan
 	return retval;
 }
 
-void AttributeBuffContext::notify_attributes_container()
-{
-	for (int i = 0; i < diffs_to_notify.size(); i++) {
-		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
-			Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_diff->attribute_name);
-
-			runtime_attribute->set_buff(attribute_diff->get_current_buff());
-
-			if (attribute_diff->get_is_forceful()) {
-				runtime_attribute->set_value(attribute_diff->get_forcefully_set_value());
-			} else {
-				runtime_attribute->set_value(attribute_diff->get_current_value());
-			}
-
-			attribute_container->emit_signal("attribute_changed", runtime_attribute, runtime_attribute->get_previous_value(), runtime_attribute->get_value());
-			attribute_container->notify_derived_attributes(runtime_attribute);
-		}
-	}
-
-	diffs_to_notify.clear();
-}
-
 void AttributeBuffContext::rollback(const String &p_changeset_name)
 {
 	ERR_FAIL_NULL_MSG(attribute_container, "AttributeContainer is null, cannot rollback. This is probably due to a manual instantiation of AttributeBuffContext.");
@@ -615,10 +632,9 @@ void AttributeBuffContext::rollback(const String &p_changeset_name)
 
 			for (int j = 0; j < affected_attributes.size(); j++) {
 				const String &attribute_name = affected_attributes[j];
-				const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
 				const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
 
-				runtime_attribute->set_buff(runtime_attribute->get_buff() - attribute_diff->get_current_buff());
+				attribute_container->alter_attribute(attribute_name, -attribute_diff->get_current_buff(), 0.0f, false);
 			}
 
 			merged_changesets.erase(i);
@@ -638,17 +654,20 @@ void AttributeBuffContext::tick_operations(const float p_delta, const int p_tick
 {
 	for (int64_t i = merged_changesets.size() - 1; i >= 0; i--) {
 		if (const Ref<AttributeChangeSet> changeset = merged_changesets[i]; changeset->has_operations()) {
-			changeset->tick_operations(p_delta, p_tick_type);
+			changeset->tick_operations(p_delta);
 		}
 	}
 }
 
 void AttributeBuffContext::_bind_methods()
 {
+	/// binds methods to godot
 	ClassDB::bind_method(D_METHOD("commit", "changeset"), &AttributeBuffContext::commit);
 	ClassDB::bind_method(D_METHOD("get_attribute", "attribute_name"), &AttributeBuffContext::get_attribute);
 	ClassDB::bind_method(D_METHOD("has_attribute", "attribute_name"), &AttributeBuffContext::has_attribute);
 	ClassDB::bind_method(D_METHOD("has_changeset", "changeset_name"), &AttributeBuffContext::has_changeset);
 	ClassDB::bind_method(D_METHOD("new_changeset", "changeset_name"), &AttributeBuffContext::new_changeset, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("rollback", "changeset_name"), &AttributeBuffContext::rollback);
+
+	/// adds signals (used by the debugger tools mostly)
 }

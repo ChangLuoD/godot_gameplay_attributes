@@ -170,20 +170,21 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 			attribute_changeset_operation->set_transient(p_buff->get_transient());
 
 			switch (p_buff->get_duration_merging()) {
-				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD: {
-					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
+				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD:
+					{
+						TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
 
-					for (int j = 0; j < other_changesets.size(); j++) {
-						const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
-						TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
+						for (int j = 0; j < other_changesets.size(); j++) {
+							const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
+							TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
 
-						for (int k = 0; k < other_operation.size(); k++) {
-							const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
-							other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
+							for (int k = 0; k < other_operation.size(); k++) {
+								const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
+								other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
+							}
 						}
 					}
-				}
-				break;
+					break;
 				case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
 					buff_context->rollback(changeset_name);
 					break;
@@ -199,12 +200,30 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 	}
 }
 
+void AttributeContainer::alter_attribute(const String &p_attribute_name, const float p_attribute_buff, const float p_attribute_value, const bool p_is_set_operation)
+{
+	const Ref<RuntimeAttribute> runtime_attribute = get_runtime_attribute_by_name(p_attribute_name);
+
+	if (p_is_set_operation) {
+		runtime_attribute->set_value(p_attribute_value);
+	} else {
+		runtime_attribute->set_buff(runtime_attribute->get_buff() + p_attribute_buff);
+		runtime_attribute->set_value(runtime_attribute->get_value() + p_attribute_value);
+	}
+
+	runtime_attribute->compute_value();
+
+	emit_signal("attribute_changed", runtime_attribute, runtime_attribute->get_previous_value(), runtime_attribute->get_value());
+
+	notify_derived_attributes(runtime_attribute);
+}
+
 Ref<AttributeBuffContext> AttributeContainer::get_buff_context() const
 {
 	return buff_context;
 }
 
-bool AttributeContainer::has_changeset(const String& p_changeset) const
+bool AttributeContainer::has_changeset(const String &p_changeset) const
 {
 	ERR_FAIL_NULL_V_MSG(buff_context, false, "Buff context is null");
 	return buff_context->has_changeset(p_changeset);

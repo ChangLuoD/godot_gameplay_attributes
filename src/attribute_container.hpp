@@ -39,6 +39,13 @@ namespace octod::gameplay::attributes
 		/// @param p_buff The buff to add.
 		void apply_buff(const Ref<AttributeBuff> &p_buff) const;
 
+		/// @brief Alters the attribute value by a certain buff and value
+		/// @param p_attribute_name the name of the attribute
+		/// @param p_attribute_buff the buff applied to that attribute
+		/// @param p_attribute_value the value applied to that attribute
+		/// @param p_is_set_operation
+		void alter_attribute(const String &p_attribute_name, float p_attribute_buff, float p_attribute_value, bool p_is_set_operation);
+
 		Ref<AttributeBuffContext> get_buff_context() const;
 
 		/// @brief Removes an attribute from the container.

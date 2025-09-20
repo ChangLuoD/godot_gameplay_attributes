@@ -70,7 +70,7 @@ void gdextension_terminate(ModuleInitializationLevel p_level)
 extern "C" {
 GDExtensionBool GDE_EXPORT gdextension_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
 {
-	godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
+	const GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
 	init_obj.register_initializer(gdextension_initialize);
 	init_obj.register_terminator(gdextension_terminate);
