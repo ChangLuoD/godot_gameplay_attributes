@@ -322,8 +322,10 @@ Dictionary AttributeChangeSet::prepare_diff() const
 {
 	Dictionary diff;
 	PackedStringArray affected_attributes = operations.keys();
+	TypedArray<AttributeChangeSetOperation> operation_values = operations.values();
 
-	for (const Ref<AttributeChangeSetOperation> operation : operations.values()) {
+	for (int64_t i = 0; i < operation_values.size(); i++) {
+		const Ref<AttributeChangeSetOperation> operation = operation_values[i];
 		const String &attribute_name = operation->runtime_attribute->get_attribute_name();
 		Ref<AttributeDiff> attribute_diff;
 		attribute_diff.instantiate();
