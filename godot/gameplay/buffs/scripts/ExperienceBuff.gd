@@ -68,8 +68,6 @@ func _operate(values: Array[float], _attribute_set: AttributeSet)	-> Array[Attri
 	
 
 func get_stat_op(level_up: bool, main_stat: int, dex_stat: float, int_stat: float, str_stat: float) -> Array[AttributeOperation]:
-	var output: Array[AttributeOperation] = []
-
 	if level_up:
 		var dex_stat_op := 1.0
 		var int_stat_op := 1.0

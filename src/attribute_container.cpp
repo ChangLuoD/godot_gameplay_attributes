@@ -118,86 +118,87 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 {
 	ERR_FAIL_NULL_MSG(p_buff, "Buff cannot be null, it must be an instance of a class inheriting from AttributeBuff abstract class.");
 
-	if (p_buff->is_operate_overridden()) {
-		/// disclaimer: this is going to be removed in the future for the sake of simplicity.
-		TypedArray<AttributeBase> _attributes;
-		TypedArray<RuntimeAttribute> _affected_runtime_attributes;
-		TypedArray<float> buffed_values;
-
-		ERR_FAIL_COND_MSG(!GDVIRTUAL_IS_OVERRIDDEN_PTR(p_buff, _applies_to), "Buff must override the _applies_to method to apply to derived attributes.");
-		ERR_FAIL_COND_MSG(!GDVIRTUAL_CALL_PTR(p_buff, _applies_to, attribute_set, _attributes), "An error occurred calling the overridden _applies_to method.");
-
-		for (int i = 0; i < _attributes.size(); i++) {
-			const Ref<AttributeBase> attribute_base = _attributes[i];
-			Ref<RuntimeAttribute> attribute = get_runtime_attribute_by_name(attribute_base->get_attribute_name());
-
-			ERR_FAIL_NULL_MSG(attribute, "Attribute not found in attribute set.");
-
-			_affected_runtime_attributes.push_back(attribute);
-			buffed_values.push_back(attribute->get_buffed_value());
-		}
-
-		TypedArray<AttributeOperation> operations;
-
-		const bool applied = GDVIRTUAL_CALL_PTR(p_buff, _operate, buffed_values, attribute_set, operations);
-
-		ERR_FAIL_COND_MSG(!applied, "An error occurred calling the overridden _operate method.");
-
-		/// we are going to create a new AttributeBuff for each derived attribute affected by the buff
-		/// we will add this buff to each affected runtime attribute.
-		for (int i = 0; i < operations.size(); i++) {
-			const Ref<AttributeOperation> attribute_operation = operations[i];
-			const Ref<RuntimeAttribute> &runtime_attribute = _affected_runtime_attributes[i];
-
-			ERR_FAIL_COND_MSG(!runtime_attribute.is_valid(), "Attribute not valid at index " + itos(i));
-
-			String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
-			const String changeset_name = attribute_name + "/" + p_buff->get_buff_name();
-			Ref<AttributeChangeSet> attribute_change_set = buff_context->new_changeset(changeset_name);
-
-			if (p_buff->get_unique() && buff_context->has_changeset(changeset_name)) {
-				continue;
-			}
-
-			if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_merged_changesets_by_name(changeset_name).size() >= max_stack_size) {
-				continue;
-			}
-
-			const Ref<AttributeChangeSetOperation> attribute_changeset_operation = attribute_change_set->operate(attribute_name, attribute_operation.ptr());
-
-			attribute_changeset_operation->set_duration(p_buff->get_duration(), manual_ticking ? AttributeChangeSetOperation::TICK_MANUAL : AttributeChangeSetOperation::TICK_MILLISECOND);
-			attribute_changeset_operation->set_execution_order(p_buff->get_queue_execution());
-			attribute_changeset_operation->set_transient(p_buff->get_transient());
-
-			switch (p_buff->get_duration_merging()) {
-				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD:
-					{
-						TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
-
-						for (int j = 0; j < other_changesets.size(); j++) {
-							const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
-							TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
-
-							for (int k = 0; k < other_operation.size(); k++) {
-								const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
-								other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
-							}
-						}
-					}
-					break;
-				case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
-					buff_context->rollback(changeset_name);
-					break;
-				case AttributeBuff::DurationMerging::DURATION_MERGE_STACK:
-				default:
-					break;
-			}
-
-			buff_context->commit(attribute_change_set);
-		}
-	} else {
+	if (!p_buff->is_operate_overridden()) {
 		p_buff->apply(buff_context.ptr());
+		return;
 	}
+
+	/// disclaimer: this is going to be removed in the future for the sake of simplicity.
+	TypedArray<AttributeBase> _attributes;
+	TypedArray<RuntimeAttribute> _affected_runtime_attributes;
+	TypedArray<float> buffed_values;
+
+	ERR_FAIL_COND_MSG(!GDVIRTUAL_IS_OVERRIDDEN_PTR(p_buff, _applies_to), "Buff must override the _applies_to method to apply to derived attributes.");
+	ERR_FAIL_COND_MSG(!GDVIRTUAL_CALL_PTR(p_buff, _applies_to, attribute_set, _attributes), "An error occurred calling the overridden _applies_to method.");
+
+	for (int i = 0; i < _attributes.size(); i++) {
+		const Ref<AttributeBase> attribute_base = _attributes[i];
+		Ref<RuntimeAttribute> attribute = get_runtime_attribute_by_name(attribute_base->get_attribute_name());
+
+		ERR_FAIL_NULL_MSG(attribute, "Attribute not found in attribute set.");
+
+		_affected_runtime_attributes.push_back(attribute);
+		buffed_values.push_back(attribute->get_buffed_value());
+	}
+
+	TypedArray<AttributeOperation> operations;
+
+	const bool applied = GDVIRTUAL_CALL_PTR(p_buff, _operate, buffed_values, attribute_set, operations);
+
+	ERR_FAIL_COND_MSG(!applied, "An error occurred when calling the overridden _operate method.");
+
+	const String changeset_name = p_buff->get_buff_name();
+	const Ref<AttributeChangeSet> attribute_change_set = buff_context->new_changeset(changeset_name);
+
+	if (p_buff->get_unique() && buff_context->has_changeset(changeset_name)) {
+		return;
+	}
+
+	if (const int max_stack_size = p_buff->get_stack_size(); max_stack_size > 0 && buff_context->get_merged_changesets_by_name(changeset_name).size() >= max_stack_size) {
+		return;
+	}
+
+	/// we are going to create a new AttributeBuff for each derived attribute affected by the buff
+	/// we will add this buff to each affected runtime attribute.
+	for (int i = 0; i < operations.size(); i++) {
+		const Ref<AttributeOperation> attribute_operation = operations[i];
+		const Ref<RuntimeAttribute> &runtime_attribute = _affected_runtime_attributes[i];
+
+		ERR_FAIL_COND_MSG(!runtime_attribute.is_valid(), "Attribute not valid at index " + itos(i));
+
+		String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
+
+		const Ref<AttributeChangeSetOperation> attribute_changeset_operation = attribute_change_set->operate(attribute_name, attribute_operation.ptr());
+
+		attribute_changeset_operation->set_duration(p_buff->get_duration(), manual_ticking ? AttributeChangeSetOperation::TICK_MANUAL : AttributeChangeSetOperation::TICK_MILLISECOND);
+		attribute_changeset_operation->set_execution_order(p_buff->get_queue_execution());
+		attribute_changeset_operation->set_transient(p_buff->get_transient());
+
+		switch (p_buff->get_duration_merging()) {
+			case AttributeBuff::DurationMerging::DURATION_MERGE_ADD: {
+				TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
+
+				for (int j = 0; j < other_changesets.size(); j++) {
+					const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
+					TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
+
+					for (int k = 0; k < other_operation.size(); k++) {
+						const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
+						other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
+					}
+				}
+			}
+			break;
+			case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
+				buff_context->rollback(changeset_name);
+				break;
+			case AttributeBuff::DurationMerging::DURATION_MERGE_STACK:
+			default:
+				break;
+		}
+	}
+
+	buff_context->commit(attribute_change_set);
 }
 
 void AttributeContainer::alter_attribute(const String &p_attribute_name, const float p_attribute_buff, const float p_attribute_value, const bool p_is_set_operation)
@@ -240,8 +241,7 @@ void AttributeContainer::remove_attribute(const Ref<AttributeBase> &p_attribute)
 
 	const String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
 
-	ERR_FAIL_COND_MSG(!attributes.has(attribute_name), "Attribute not found. This is a bug, please open an issue.");
-	ERR_FAIL_COND_MSG(!attributes.erase(attribute_name), "Failed to remove attribute from container.");
+	ERR_FAIL_COND_MSG(!attributes.erase(attribute_name), "Failed to remove attribute from container (probably it does not exist).");
 }
 
 void AttributeContainer::remove_buff(const Ref<AttributeBuff> &p_buff) const
@@ -255,18 +255,14 @@ void AttributeContainer::remove_buff(const Ref<AttributeBuff> &p_buff) const
 void AttributeContainer::setup()
 {
 	attributes.clear();
+	buff_context.instantiate();
+	buff_context->set_attribute_container(this);
 
 	if (attribute_set.is_valid()) {
 		for (int i = 0; i < attribute_set->count(); i++) {
 			add_attribute(attribute_set->get_at(i));
 		}
 	}
-
-	if (buff_context.is_null()) {
-		buff_context.instantiate();
-	}
-
-	buff_context->set_attribute_container(this);
 }
 
 Ref<RuntimeAttribute> AttributeContainer::find(const Callable &p_predicate) const
@@ -311,11 +307,7 @@ TypedArray<RuntimeAttribute> AttributeContainer::get_runtime_attributes() const
 
 Ref<RuntimeAttribute> AttributeContainer::get_runtime_attribute_by_name(const String &p_name) const
 {
-	if (attributes.has(p_name)) {
-		return attributes[p_name];
-	}
-
-	return {};
+	return attributes.get(p_name, {});
 }
 
 float AttributeContainer::get_attribute_buffed_value_by_name(const String &p_name) const

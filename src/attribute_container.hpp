@@ -135,7 +135,7 @@ namespace octod::gameplay::attributes
 		static void _bind_methods();
 		/// @brief Attribute's set.
 		Ref<AttributeSet> attribute_set;
-		/// @brief TypedArray of attributes.
+		/// @brief Dictionary of attributes. Key is the attribute name, value is a RuntimeAttribute instance.
 		Dictionary attributes;
 		/// @brief The attribute buff context.
 		Ref<AttributeBuffContext> buff_context;
