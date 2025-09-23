@@ -65,8 +65,8 @@ bool AttributeContainer::has_attribute(const Ref<AttributeBase> &p_attribute) co
 
 void AttributeContainer::notify_derived_attributes(const Ref<RuntimeAttribute> &p_base_runtime_attribute)
 {
-	if (derived_attributes.has(p_base_runtime_attribute->get_attribute()->get_attribute_name())) {
-		TypedArray<RuntimeAttribute> derived = derived_attributes[p_base_runtime_attribute->get_attribute()->get_attribute_name()];
+	if (const String attribute_name = p_base_runtime_attribute->get_attribute_name(); derived_attributes.has(attribute_name)) {
+		TypedArray<RuntimeAttribute> derived = derived_attributes[attribute_name];
 
 		for (int i = 0; i < derived.size(); i++) {
 			const Ref<RuntimeAttribute> derived_attribute = derived[i];
@@ -175,20 +175,21 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 		attribute_changeset_operation->set_transient(p_buff->get_transient());
 
 		switch (p_buff->get_duration_merging()) {
-			case AttributeBuff::DurationMerging::DURATION_MERGE_ADD: {
-				TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
+			case AttributeBuff::DurationMerging::DURATION_MERGE_ADD:
+				{
+					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
 
-				for (int j = 0; j < other_changesets.size(); j++) {
-					const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
-					TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
+					for (int j = 0; j < other_changesets.size(); j++) {
+						const Ref<AttributeChangeSet> &other_changeset = other_changesets[j];
+						TypedArray<AttributeChangeSetOperation> other_operation = other_changeset->get_operations();
 
-					for (int k = 0; k < other_operation.size(); k++) {
-						const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
-						other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
+						for (int k = 0; k < other_operation.size(); k++) {
+							const Ref<AttributeChangeSetOperation> &other_operation_ref = other_operation[k];
+							other_operation_ref->set_remaining_duration(other_operation_ref->get_duration() + p_buff->get_duration());
+						}
 					}
 				}
-			}
-			break;
+				break;
 			case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
 				buff_context->rollback(changeset_name);
 				break;
