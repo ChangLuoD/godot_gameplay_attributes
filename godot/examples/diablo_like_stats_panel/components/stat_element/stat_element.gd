@@ -16,7 +16,7 @@ func _ready() -> void:
 	render(attribute)
 
 
-func on_attribute_changed(p_attribute: RuntimeAttribute, previous_value: float, new_value: float) -> void:
+func on_attribute_changed(p_attribute: RuntimeAttribute, _previous_value: float, _new_value: float) -> void:
 	if attribute.attribute_name == p_attribute.attribute.attribute_name:
 		render(p_attribute.attribute)
 

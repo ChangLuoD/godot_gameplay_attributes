@@ -39,7 +39,7 @@ func _ready() -> void:
 	timer.start()
 
 
-func update_ui(runtime_attribute: RuntimeAttribute, old_value: float, new_value: float) -> void:
+func update_ui(runtime_attribute: RuntimeAttribute, _old_value: float, new_value: float) -> void:
 	if runtime_attribute.attribute is ToNextLevelPercentageAttribute:
 		current_level_bar.value = new_value
 	if runtime_attribute.attribute is DamageAttribute:

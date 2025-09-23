@@ -18,8 +18,7 @@ func _applies_to(attribute_set: AttributeSet) -> Array[AttributeBase]:
 	]
 
 
-func _operate(values: Array[float], attribute_set: AttributeSet) -> Array[AttributeOperation]:
-	var healthAttribute = values[0]
+func _operate(values: Array[float], _attribute_set: AttributeSet) -> Array[AttributeOperation]:
 	var armorAttribute = values[1]
 	var resistanceDarkness = values[2]
 	var resistanceFire = values[3]
