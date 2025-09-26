@@ -90,6 +90,8 @@ void AttributeContainer::add_attribute(const Ref<AttributeBase> &p_attribute)
 		attribute_set->add_attribute(p_attribute);
 	}
 
+	const String attribute_name = p_attribute->get_attribute_name();
+
 	runtime_attribute->attribute_container = this;
 	runtime_attribute->set_attribute(p_attribute);
 	runtime_attribute->set_attribute_set(attribute_set);
@@ -98,20 +100,21 @@ void AttributeContainer::add_attribute(const Ref<AttributeBase> &p_attribute)
 		for (int i = 0; i < base_attributes.size(); i++) {
 			const Ref<AttributeBase> base_attribute = base_attributes[i];
 
-			ERR_FAIL_COND_MSG(base_attribute.is_null(), "Required base attribute " + p_attribute->get_attribute_name() + " does not exist into the AttributeSet.");
+			ERR_FAIL_COND_MSG(base_attribute.is_null(), "Required base attribute " + attribute_name + " does not exist into the AttributeSet.");
 
-			if (derived_attributes.has(base_attribute->get_attribute_name())) {
-				Array _derived = derived_attributes[base_attribute->get_attribute_name()];
+			Array _derived;
+
+			if (const String base_attribute_name = base_attribute->get_attribute_name(); derived_attributes.has(base_attribute_name)) {
+				_derived = derived_attributes[base_attribute_name];
 				_derived.push_back(runtime_attribute);
 			} else {
-				Array _derived;
-				derived_attributes[base_attribute->get_attribute_name()] = _derived;
+				derived_attributes[base_attribute_name] = _derived;
 				_derived.push_back(runtime_attribute);
 			}
 		}
 	}
 
-	attributes[p_attribute->get_attribute_name()] = runtime_attribute;
+	attributes[attribute_name] = runtime_attribute;
 }
 
 void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const

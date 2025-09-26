@@ -119,6 +119,11 @@ bool AttributeChangeSetOperation::can_be_processed() const
 	return true;
 }
 
+AttributeChangeSet *AttributeChangeSetOperation::get_changeset() const
+{
+	return change_set;
+}
+
 float AttributeChangeSetOperation::get_duration() const
 {
 	return duration;

@@ -798,13 +798,14 @@ Ref<RuntimeBuff> RuntimeAttribute::add_buff(const Ref<AttributeBuff> &p_buff) co
 bool RuntimeAttribute::can_receive_buff(const Ref<AttributeBuff> &p_buff) const
 {
 	WARN_DEPRECATED_MSG("this method is deprecated, use the BuffContext api on AttributeContainer instead");
-	return true;
+	return p_buff.is_valid() && attribute_container != nullptr;
 }
 
 void RuntimeAttribute::compute_value()
 {
 	if (GDVIRTUAL_IS_OVERRIDDEN_PTR(attribute, _compute_value)) {
-		AttributeComputationArgument *argument = memnew(AttributeComputationArgument);
+		Ref<AttributeComputationArgument> argument;
+		argument.instantiate();
 
 		const float _previous_value = value;
 
@@ -821,9 +822,10 @@ void RuntimeAttribute::compute_value()
 	}
 }
 
-void RuntimeAttribute::clear_buffs()
+void RuntimeAttribute::clear_buffs() const
 {
 	WARN_DEPRECATED_MSG("this method is deprecated, use the AttributeContainer.rollback function instead.");
+	attribute_container->get_buff_context()->rollback(attribute->get_attribute_name());
 }
 
 String RuntimeAttribute::get_attribute_name() const
@@ -854,7 +856,7 @@ TypedArray<RuntimeAttribute> RuntimeAttribute::get_parent_runtime_attributes() c
 bool RuntimeAttribute::has_buff(const Ref<AttributeBuff> &p_buff) const
 {
 	WARN_DEPRECATED_MSG("this method is deprecated, use the BuffContext api on AttributeContainer instead.");
-	return false;
+	return attribute_container->get_buff_context()->has_changeset(p_buff->get_buff_name());
 }
 
 bool RuntimeAttribute::has_ongoing_buffs() const

@@ -2197,8 +2197,6 @@ value = 1.0
 attribute_name = "DamageDarknessAttribute"
 operation = SubResource("AttributeOperation_oms1s")
 script = ExtResource("4_d3dwm")
-damage_type = 0
-damage_range = 1.0
 metadata/_custom_type_script = "uid://dl3hlrtn1grdh"
 
 [sub_resource type="AttributeOperation" id="AttributeOperation_d3dwm"]
@@ -2209,7 +2207,6 @@ attribute_name = "DamageFireAttribute"
 operation = SubResource("AttributeOperation_d3dwm")
 script = ExtResource("4_d3dwm")
 damage_type = 1
-damage_range = 1.0
 metadata/_custom_type_script = "uid://dl3hlrtn1grdh"
 
 [sub_resource type="AttributeOperation" id="AttributeOperation_bli6e"]
@@ -2220,7 +2217,6 @@ attribute_name = "DamageLightningAttribute"
 operation = SubResource("AttributeOperation_bli6e")
 script = ExtResource("4_d3dwm")
 damage_type = 2
-damage_range = 1.0
 metadata/_custom_type_script = "uid://dl3hlrtn1grdh"
 
 [sub_resource type="AttributeOperation" id="AttributeOperation_buj84"]
@@ -2231,7 +2227,6 @@ attribute_name = "DamagePhysicalAttribute"
 operation = SubResource("AttributeOperation_buj84")
 script = ExtResource("4_d3dwm")
 damage_type = 3
-damage_range = 1.0
 metadata/_custom_type_script = "uid://dl3hlrtn1grdh"
 
 [sub_resource type="AttributeOperation" id="AttributeOperation_oolmw"]
@@ -2242,7 +2237,6 @@ attribute_name = "DamagePoisonAttribute"
 operation = SubResource("AttributeOperation_oolmw")
 script = ExtResource("4_d3dwm")
 damage_type = 4
-damage_range = 1.0
 metadata/_custom_type_script = "uid://dl3hlrtn1grdh"
 
 [sub_resource type="Attribute" id="Attribute_qgvpp"]

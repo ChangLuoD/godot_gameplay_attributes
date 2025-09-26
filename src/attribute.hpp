@@ -536,7 +536,7 @@ namespace octod::gameplay::attributes
 
 		/// @brief Clear the buffs from the attribute.
 		/// @deprecated, use AttributeContainer::rollback instead
-		void clear_buffs();
+		void clear_buffs() const;
 
 		/// @brief Gets the attribute name.
 		/// @return The attribute name

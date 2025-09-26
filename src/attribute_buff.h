@@ -92,6 +92,8 @@ namespace octod::gameplay::attributes
 
 		[[nodiscard]] bool can_be_processed() const;
 
+		[[nodiscard]] AttributeChangeSet* get_changeset() const;
+
 		[[nodiscard]] float get_duration() const;
 
 		[[nodiscard]] int get_execution_order() const;
