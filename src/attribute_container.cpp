@@ -18,7 +18,9 @@ using namespace octod::gameplay::attributes;
 void AttributeContainer::_notification(const int p_what)
 {
 	if (p_what == NOTIFICATION_ENTER_TREE) {
-		setup();
+		if (!setup_done) {
+			setup();
+		}
 		set_physics_process(true);
 	} else if (p_what == NOTIFICATION_PHYSICS_PROCESS && !manual_ticking) {
 		buff_context->tick_operations(static_cast<float>(get_physics_process_delta_time()));
@@ -267,6 +269,8 @@ void AttributeContainer::setup()
 			add_attribute(attribute_set->get_at(i));
 		}
 	}
+
+	setup_done = true;
 }
 
 Ref<RuntimeAttribute> AttributeContainer::find(const Callable &p_predicate) const
