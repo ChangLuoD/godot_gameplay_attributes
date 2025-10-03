@@ -34,8 +34,6 @@ namespace octod::gameplay::attributes
 
 		bool time_based = false;
 
-		[[nodiscard]] bool did_change() const;
-
 		[[nodiscard]] float get_current_buff() const;
 
 		[[nodiscard]] float get_current_value() const;

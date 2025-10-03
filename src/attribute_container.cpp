@@ -171,16 +171,15 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 
 		ERR_FAIL_COND_MSG(!runtime_attribute.is_valid(), "Attribute not valid at index " + itos(i));
 
-		String attribute_name = runtime_attribute->get_attribute()->get_attribute_name();
-
-		const Ref<AttributeChangeSetOperation> attribute_changeset_operation = attribute_change_set->operate(attribute_name, attribute_operation.ptr());
+		const Ref<AttributeChangeSetOperation> attribute_changeset_operation = attribute_change_set->operate(runtime_attribute->get_attribute_name(), attribute_operation.ptr());
 
 		attribute_changeset_operation->set_duration(p_buff->get_duration(), manual_ticking ? AttributeChangeSetOperation::TICK_MANUAL : AttributeChangeSetOperation::TICK_MILLISECOND);
 		attribute_changeset_operation->set_execution_order(p_buff->get_queue_execution());
 		attribute_changeset_operation->set_transient(p_buff->get_transient());
 
-		switch (p_buff->get_duration_merging()) {
-			case AttributeBuff::DurationMerging::DURATION_MERGE_ADD:
+		if (!Math::is_zero_approx(p_buff->get_duration())) {
+			switch (p_buff->get_duration_merging()) {
+				case AttributeBuff::DurationMerging::DURATION_MERGE_ADD:
 				{
 					TypedArray<AttributeChangeSet> other_changesets = buff_context->get_merged_changesets_by_name(changeset_name);
 
@@ -194,13 +193,14 @@ void AttributeContainer::apply_buff(const Ref<AttributeBuff> &p_buff) const
 						}
 					}
 				}
-				break;
-			case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
-				buff_context->rollback(changeset_name);
-				break;
-			case AttributeBuff::DurationMerging::DURATION_MERGE_STACK:
-			default:
-				break;
+					break;
+				case AttributeBuff::DurationMerging::DURATION_MERGE_RESTART:
+					buff_context->rollback(changeset_name);
+					break;
+				case AttributeBuff::DurationMerging::DURATION_MERGE_STACK:
+				default:
+					break;
+			}
 		}
 	}
 
@@ -261,6 +261,7 @@ void AttributeContainer::remove_buff(const Ref<AttributeBuff> &p_buff) const
 void AttributeContainer::setup()
 {
 	attributes.clear();
+	derived_attributes.clear();
 	buff_context.instantiate();
 	buff_context->set_attribute_container(this);
 

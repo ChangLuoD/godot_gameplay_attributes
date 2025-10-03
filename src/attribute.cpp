@@ -234,7 +234,7 @@ bool AttributeBuff::equals_to(const Ref<AttributeBuff> &buff) const
 	ERR_FAIL_COND_V_MSG(buff.is_null(), false, "Cannot compare to null AttributeBuff. This is a bug, please report it.");
 
 	return (
-		Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
+			Math::is_equal_approx(buff->duration, duration) && attribute_name == buff->attribute_name && buff_name == buff->buff_name && duration_merging == buff->duration_merging && max_stacking == buff->max_stacking && queue_execution == buff->queue_execution && transient == buff->transient && unique == buff->unique);
 }
 
 float AttributeBuff::operate(const float base_value) const
@@ -448,11 +448,7 @@ void AttributeBase::_bind_methods()
 
 String AttributeBase::get_attribute_name() const
 {
-	if (attribute_name.is_empty()) {
-		return get_class_static();
-	}
-
-	return attribute_name;
+	return attribute_name.is_empty() ? get_path() : attribute_name;
 }
 
 void AttributeBase::set_attribute_name(const String &p_value)
@@ -818,6 +814,7 @@ void RuntimeAttribute::compute_value()
 
 		if (!Math::is_equal_approx(_previous_value, value)) {
 			previous_value = _previous_value;
+			attribute_container->emit_signal("attribute_changed", this, previous_value, value);
 		}
 	}
 }

@@ -23,15 +23,6 @@
 
 using namespace octod::gameplay::attributes;
 
-bool AttributeDiff::did_change() const
-{
-	if (is_forceful) {
-		return true;
-	}
-
-	return !Math::is_equal_approx(current_value + current_buff, previous_value + previous_buff);
-}
-
 float AttributeDiff::get_current_buff() const
 {
 	return current_buff;
@@ -363,9 +354,7 @@ Dictionary AttributeChangeSet::prepare_diff() const
 		attribute_diff->set_previous(attribute_buff_context->get_attribute(attribute_name)->get_value());
 		attribute_diff->set_previous_buff(attribute_buff_context->get_attribute(attribute_name)->get_buff());
 
-		if (attribute_diff->did_change()) {
-			diff.set(attribute_name, attribute_diff);
-		}
+		diff.set(attribute_name, attribute_diff);
 	}
 
 	return diff;
@@ -585,10 +574,8 @@ void AttributeBuffContext::merge()
 		const Ref<AttributeDiff> attribute_diff = diff[attribute_name];
 		const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(attribute_name);
 
-		if (attribute_diff->did_change()) {
-			attribute_diff->attribute_name = attribute_name;
-			diffs_to_notify.push_back(attribute_diff);
-		}
+		attribute_diff->attribute_name = attribute_name;
+		diffs_to_notify.push_back(attribute_diff);
 	}
 
 	for (int64_t i = committed_changesets.size() - 1; i >= 0; i--) {
@@ -604,13 +591,12 @@ void AttributeBuffContext::merge()
 	}
 
 	for (int i = 0; i < diffs_to_notify.size(); i++) {
-		if (const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i]; attribute_diff->did_change()) {
-			attribute_container->alter_attribute(
-					attribute_diff->attribute_name,
-					attribute_diff->get_current_buff(),
-					attribute_diff->get_current_value(),
-					attribute_diff->get_is_forceful());
-		}
+		const Ref<AttributeDiff> attribute_diff = diffs_to_notify[i];
+		attribute_container->alter_attribute(
+				attribute_diff->attribute_name,
+				attribute_diff->get_current_buff(),
+				attribute_diff->get_current_value(),
+				attribute_diff->get_is_forceful());
 	}
 
 	committed_changesets.clear();
@@ -675,6 +661,4 @@ void AttributeBuffContext::_bind_methods()
 	ClassDB::bind_method(D_METHOD("has_changeset", "changeset_name"), &AttributeBuffContext::has_changeset);
 	ClassDB::bind_method(D_METHOD("new_changeset", "changeset_name"), &AttributeBuffContext::new_changeset, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("rollback", "changeset_name"), &AttributeBuffContext::rollback);
-
-	/// adds signals (used by the debugger tools mostly)
 }
