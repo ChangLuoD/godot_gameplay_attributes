@@ -531,13 +531,15 @@ Dictionary AttributeBuffContext::get_diff() const
 	return attributes_diff;
 }
 
-RuntimeAttribute *AttributeBuffContext::get_attribute(const String &p_attribute_name) const
+Ref<RuntimeAttribute> AttributeBuffContext::get_attribute(const String &p_attribute_name) const
 {
-	ERR_FAIL_NULL_V_MSG(attribute_container, nullptr, "This AttributeChangeSet attribute_container pointer is null, this is probably due to a manual instantiation");
+	ERR_FAIL_NULL_V_MSG(attribute_container, {}, "This AttributeChangeSet attribute_container pointer is null, this is probably due to a manual instantiation");
 
 	const Ref<RuntimeAttribute> runtime_attribute = attribute_container->get_runtime_attribute_by_name(p_attribute_name);
 
-	return runtime_attribute.is_valid() ? runtime_attribute.ptr() : nullptr;
+	ERR_FAIL_NULL_V_MSG(runtime_attribute, {}, "Attribute " + p_attribute_name + " does not exist");
+
+	return runtime_attribute;
 }
 
 bool AttributeBuffContext::has_attribute(const String &p_attribute_name) const

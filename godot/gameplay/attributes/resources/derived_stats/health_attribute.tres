@@ -3,5 +3,6 @@
 [ext_resource type="Script" uid="uid://cf5fy10qb4rg4" path="res://gameplay/attributes/scripts/derived_stats/HealthAttribute.gd" id="1_iwp5w"]
 
 [resource]
+attribute_name = "res://gameplay/attributes/resources/derived_stats/health_attribute.tres"
 script = ExtResource("1_iwp5w")
 metadata/_custom_type_script = "uid://cf5fy10qb4rg4"

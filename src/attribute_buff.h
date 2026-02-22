@@ -68,7 +68,7 @@ namespace octod::gameplay::attributes
 
 	class AttributeChangeSetOperation final : public RefCounted
 	{
-		GDCLASS(AttributeChangeSetOperation, RefCounted)
+		GDCLASS(AttributeChangeSetOperation, RefCounted) // NOLINT(*-unhandled-self-assignment)
 
 	public:
 		enum AttributeChangeSetOperationTickType : uint8_t
@@ -150,7 +150,7 @@ namespace octod::gameplay::attributes
 
 	class AttributeChangeSet final : public RefCounted
 	{
-		GDCLASS(AttributeChangeSet, RefCounted)
+		GDCLASS(AttributeChangeSet, RefCounted) // NOLINT(*-unhandled-self-assignment)
 
 	public:
 		void clear_persistent_operations();
@@ -187,7 +187,7 @@ namespace octod::gameplay::attributes
 
 	class AttributeBuffContext final : public RefCounted
 	{
-		GDCLASS(AttributeBuffContext, RefCounted)
+		GDCLASS(AttributeBuffContext, RefCounted) // NOLINT(*-unhandled-self-assignment)
 
 	public:
 		void commit(const Ref<AttributeChangeSet> &p_changeset);
@@ -209,7 +209,7 @@ namespace octod::gameplay::attributes
 		/// @brief Returns a Dictionary where the key is the attribute name, and the value is an instance of AttributeDiff
 		[[nodiscard]] Dictionary get_diff() const;
 
-		[[nodiscard]] RuntimeAttribute *get_attribute(const String &p_attribute_name) const;
+		[[nodiscard]] Ref<RuntimeAttribute> get_attribute(const String &p_attribute_name) const;
 
 		[[nodiscard]] bool has_attribute(const String &p_attribute_name) const;
 

@@ -2240,6 +2240,7 @@ damage_type = 4
 metadata/_custom_type_script = "uid://dl3hlrtn1grdh"
 
 [sub_resource type="Attribute" id="Attribute_qgvpp"]
+attribute_name = "res://examples/diablo_like_stats_panel/diablo_like_stats_panel.tscn::Attribute_qgvpp"
 script = ExtResource("10_fk780")
 metadata/_custom_type_script = "uid://b2djvxmp3yvsr"
 
