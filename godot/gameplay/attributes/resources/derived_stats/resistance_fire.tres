@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="ResistanceFire" load_steps=2 format=3 uid="uid://cjrg4ymt4kt8j"]
-
-[ext_resource type="Script" uid="uid://wyu6kjrwngui" path="res://gameplay/attributes/scripts/derived_stats/ResistanceFireAttribute.gd" id="1_p4m5e"]
-
-[resource]
-script = ExtResource("1_p4m5e")
-metadata/_custom_type_script = "uid://wyu6kjrwngui"

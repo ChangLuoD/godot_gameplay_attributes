@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="WeaponDamageAttribute" load_steps=2 format=3 uid="uid://chflikwoscdd4"]
-
-[ext_resource type="Script" uid="uid://dgeetreke8pxn" path="res://gameplay/attributes/scripts/base_stats/WeaponDamageAttribute.gd" id="1_5eyy2"]
-
-[resource]
-script = ExtResource("1_5eyy2")
-metadata/_custom_type_script = "uid://dgeetreke8pxn"

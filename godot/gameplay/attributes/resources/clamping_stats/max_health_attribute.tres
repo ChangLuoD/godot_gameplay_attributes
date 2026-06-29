@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="MaxHealthAttribute" load_steps=2 format=3 uid="uid://ycgjkjx2alpy"]
-
-[ext_resource type="Script" uid="uid://c2gk2r7luu5nx" path="res://gameplay/attributes/scripts/clamping_stats/MaxHealthAttribute.gd" id="1_2kxmw"]
-
-[resource]
-script = ExtResource("1_2kxmw")
-metadata/_custom_type_script = "uid://c2gk2r7luu5nx"

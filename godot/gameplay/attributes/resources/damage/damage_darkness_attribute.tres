@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="DamageDarknessAttribute" load_steps=2 format=3 uid="uid://cu3olf60h2ub4"]
-
-[ext_resource type="Script" uid="uid://cfmkorfr58rgx" path="res://gameplay/attributes/scripts/damage/DamageDarkness.gd" id="1_khv7p"]
-
-[resource]
-script = ExtResource("1_khv7p")
-metadata/_custom_type_script = "uid://cfmkorfr58rgx"

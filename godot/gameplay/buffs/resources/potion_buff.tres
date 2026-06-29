@@ -1,8 +1,0 @@
-[gd_resource type="AttributeBuff" script_class="PotionBuff" load_steps=2 format=3 uid="uid://klnd81ag4vne"]
-
-[ext_resource type="Script" uid="uid://d37sxda2tmpl0" path="res://gameplay/buffs/scripts/PotionBuff.gd" id="1_xkigo"]
-
-[resource]
-queue_execution = 112
-script = ExtResource("1_xkigo")
-metadata/_custom_type_script = "uid://d37sxda2tmpl0"

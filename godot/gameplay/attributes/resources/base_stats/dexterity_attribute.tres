@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="DexterityAttribute" load_steps=2 format=3 uid="uid://1amikj7jssm"]
-
-[ext_resource type="Script" uid="uid://2qpjg7mxch88" path="res://gameplay/attributes/scripts/base_stats/DexterityAttribute.gd" id="1_43ch4"]
-
-[resource]
-script = ExtResource("1_43ch4")
-metadata/_custom_type_script = "uid://2qpjg7mxch88"

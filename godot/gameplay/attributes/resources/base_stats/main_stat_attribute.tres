@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="MainStatAttribute" load_steps=2 format=3 uid="uid://c4lfianwxckhs"]
-
-[ext_resource type="Script" uid="uid://dbn3qyx3gii71" path="res://gameplay/attributes/scripts/base_stats/MainStatAttribute.gd" id="1_fyxq3"]
-
-[resource]
-script = ExtResource("1_fyxq3")
-metadata/_custom_type_script = "uid://dbn3qyx3gii71"

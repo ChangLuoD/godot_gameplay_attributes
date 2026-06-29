@@ -1,8 +1,0 @@
-[gd_resource type="AttributeSet" load_steps=3 format=3 uid="uid://bm14sn6sj3pnn"]
-
-[ext_resource type="Attribute" uid="uid://ycgjkjx2alpy" path="res://gameplay/attributes/resources/clamping_stats/max_health_attribute.tres" id="1_k37o2"]
-[ext_resource type="Attribute" uid="uid://qv58hj03342v" path="res://gameplay/attributes/resources/derived_stats/health_attribute.tres" id="2_my3d6"]
-
-[resource]
-attributes = Array[AttributeBase]([ExtResource("1_k37o2"), ExtResource("2_my3d6")])
-set_name = "AttributesInitializationAttributeSet"

@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="DamagePhysicalAttribute" load_steps=2 format=3 uid="uid://bc4tok2mbfbv8"]
-
-[ext_resource type="Script" uid="uid://fcnbnuy20yca" path="res://gameplay/attributes/scripts/damage/DamagePhysical.gd" id="1_5tmn1"]
-
-[resource]
-script = ExtResource("1_5tmn1")
-metadata/_custom_type_script = "uid://fcnbnuy20yca"

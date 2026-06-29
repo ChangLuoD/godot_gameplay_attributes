@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="AttributeContainer" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		Contains an [AttributeSet] and manages [AttributeBase] and [AttributeBuff] objects.
+		包含 [AttributeSet] 并管理 [AttributeBase] 和 [AttributeBuff] 对象。
 	</brief_description>
 	<description>
-		This class is used to manage [AttributeBase] and [AttributeBuff] objects. 
+		此类用于管理 [AttributeBase] 和 [AttributeBuff] 对象。
 
-		You can add, remove and find attributes and buffs using this node. 
+		你可以使用此节点添加、移除和查找属性和增益效果。
 	</description>
 	<tutorials>
 	</tutorials>
@@ -15,113 +15,113 @@
 			<return type="void" />
 			<param index="0" name="p_attribute" type="AttributeBase" />
 			<description>
-				Adds an attribute to the container.
+				向容器添加一个属性。
 			</description>
 		</method>
 		<method name="apply_buff">
 			<return type="void" />
 			<param index="0" name="p_buff" type="AttributeBuff" />
 			<description>
-				Applies a buff to the right attribute(s).
+				将增益效果应用到正确的属性上。
 			</description>
 		</method>
 		<method name="find" qualifiers="const">
 			<return type="RuntimeAttribute" />
 			<param index="0" name="p_predicate" type="Callable" />
 			<description>
-				Finds a [RuntimeAttribute] using a predicate.
+				使用谓词查找 [RuntimeAttribute]。
 			</description>
 		</method>
 		<method name="find_buffed_value" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="p_predicate" type="Callable" />
 			<description>
-				Finds the buffed value of an attribute using a predicate.
+				使用谓词查找属性的增益值。
 			</description>
 		</method>
 		<method name="find_value" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="p_predicate" type="Callable" />
 			<description>
-				Finds the value of an attribute using a predicate.
+				使用谓词查找属性的值。
 			</description>
 		</method>
 		<method name="get_attribute_buffed_value_by_name" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="p_name" type="String" />
 			<description>
-				Gets the buffed value of an attribute by name.
-				[b]Note:[/b] If an attribute is derived by many others, and a buff has [method AttributeBuff._operate] overloaded, the buffed value will not reflect the real value. Use the [method find_buffed_value] method to get the real value.
+				通过名称获取属性的增益值。
+				[b]注意：[/b] 如果一个属性由多个其他属性派生，并且某个增益效果重载了 [method AttributeBuff._operate]，增益值将不能反映真实值。使用 [method find_buffed_value] 方法来获取真实值。
 			</description>
 		</method>
 		<method name="get_attribute_by_name" qualifiers="const">
 			<return type="RuntimeAttribute" />
 			<param index="0" name="p_name" type="String" />
 			<description>
-				Gets an attribute by name.
+				通过名称获取属性。
 			</description>
 		</method>
 		<method name="get_attribute_value_by_name" qualifiers="const">
 			<return type="float" />
 			<param index="0" name="p_name" type="String" />
 			<description>
-				Gets the value of an attribute by name.
+				通过名称获取属性的值。
 			</description>
 		</method>
 		<method name="get_attributes" qualifiers="const">
 			<return type="RuntimeAttribute[]" />
 			<description>
-				Gets all attributes.
+				获取所有属性。
 			</description>
 		</method>
 		<method name="get_manual_ticking" qualifiers="const">
 			<return type="bool"/>
 			<description>
-				Returns the `manual_ticking` flag
+				返回 `manual_ticking` 标志。
 			</description>
 		</method>
 		<method name="remove_attribute">
 			<return type="void" />
 			<param index="0" name="p_attribute" type="AttributeBase" />
 			<description>
-				Removes an attribute from the container.
+				从容器中移除一个属性。
 			</description>
 		</method>
 		<method name="remove_buff">
 			<return type="void" />
 			<param index="0" name="p_buff" type="AttributeBuff" />
 			<description>
-				Removes a buff from the container.
+				从容器中移除一个增益效果。
 			</description>
 		</method>
 		<method name="setup">
 			<return type="void" />
 			<description>
-				Sets up the container. Call this programmatically in case the [method _ready] method is not called.
+				设置容器。如果 [method _ready] 方法没有被调用，请在程序中调用此方法。
 			</description>
 		</method>
 		<method name="set_manual_ticking">
 			<return type="void" />
 			<param index="0" name="p_manual_ticking" type="bool" />
 			<description>
-				Sets the [manual_ticking] bool.
+				设置 [manual_ticking] 布尔值。
 			</description>
 		</method>
 		<method name="subtract_attribute_buffs_ticks">
 			<return type="void" />
 			<param index="0" name="p_tick" type="float" />
 			<description>
-				Subtracts the passed p_tick value to all timed transient [AttributeBuff] instances durations in the container.
-				Ideal for turn-based games or to handle programmatic resets/updates.
+				将传递的 p_tick 值减去容器中所有定时瞬态 [AttributeBuff] 实例的持续时间。
+				适用于回合制游戏或处理程序化的重置/更新。
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="attribute_set" type="AttributeSet" setter="set_attribute_set" getter="get_attribute_set">
-			The set of attributes.
+			属性的集合。
 		</member>
 		<member name="manual_ticking" type="bool" setter="set_manual_ticking" getter="get_manual_ticking">
-			If set to true, every [AttributeBuff] duration is going to be handled by you.
+			如果设置为 true，则每个 [AttributeBuff] 的持续时间将由你来处理。
 		</member>
 	</members>
 	<signals>
@@ -130,31 +130,31 @@
 			<param index="1" name="previous_value" type="float" />
 			<param index="2" name="new_value" type="float" />
 			<description>
-				Emitted when an attribute changes.
+				当属性发生变化时触发。
 			</description>
 		</signal>
 		<signal name="buff_applied">
 			<param index="0" name="buff" type="RuntimeBuff" />
 			<description>
-				Emitted when a buff is applied.
+				当增益效果被应用时触发。
 			</description>
 		</signal>
 		<signal name="buff_dequed">
 			<param index="0" name="buff" type="RuntimeBuff" />
 			<description>
-				Emitted when a buff is dequeued because it is expired. 
+				当增益效果因过期而被出队时触发。
 			</description>
 		</signal>
 		<signal name="buff_enqued">
 			<param index="0" name="buff" type="RuntimeBuff" />
 			<description>
-				Emitted when a buff is enqueued.
+				当增益效果被入队时触发。
 			</description>
 		</signal>
 		<signal name="buff_removed">
 			<param index="0" name="buff" type="RuntimeBuff" />
 			<description>
-				Emitted when a buff is removed.
+				当增益效果被移除时触发。
 			</description>
 		</signal>
 	</signals>

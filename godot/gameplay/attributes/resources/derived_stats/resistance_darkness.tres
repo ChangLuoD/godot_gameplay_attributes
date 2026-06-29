@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="ResistanceDarkness" load_steps=2 format=3 uid="uid://crertq4syy8bw"]
-
-[ext_resource type="Script" uid="uid://dco6opjgbnuro" path="res://gameplay/attributes/scripts/derived_stats/ResistanceDarknessAttribute.gd" id="1_mjmif"]
-
-[resource]
-script = ExtResource("1_mjmif")
-metadata/_custom_type_script = "uid://dco6opjgbnuro"

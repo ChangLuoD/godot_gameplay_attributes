@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="NextLevelExperience" load_steps=2 format=3 uid="uid://c17rjrfhgankh"]
-
-[ext_resource type="Script" uid="uid://bwj1pt7pg4kl" path="res://gameplay/attributes/scripts/derived_stats/NextLevelExperience.gd" id="1_5n8wr"]
-
-[resource]
-script = ExtResource("1_5n8wr")
-metadata/_custom_type_script = "uid://bwj1pt7pg4kl"

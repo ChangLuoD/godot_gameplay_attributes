@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="AttackPowerAttribute" load_steps=2 format=3 uid="uid://bdhmewo36hlny"]
-
-[ext_resource type="Script" uid="uid://6le5x8280563" path="res://gameplay/attributes/scripts/derived_stats/AttackPowerAttribute.gd" id="1_6pdar"]
-
-[resource]
-script = ExtResource("1_6pdar")
-metadata/_custom_type_script = "uid://6le5x8280563"

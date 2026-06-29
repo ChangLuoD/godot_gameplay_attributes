@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="DamageLightningAttribute" load_steps=2 format=3 uid="uid://s4obwa2g3gfx"]
-
-[ext_resource type="Script" uid="uid://cpf2j7url84k" path="res://gameplay/attributes/scripts/damage/DamageLightning.gd" id="1_ca4ho"]
-
-[resource]
-script = ExtResource("1_ca4ho")
-metadata/_custom_type_script = "uid://cpf2j7url84k"

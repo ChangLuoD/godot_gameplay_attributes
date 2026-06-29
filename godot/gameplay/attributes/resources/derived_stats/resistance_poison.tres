@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="ResistancePoison" load_steps=2 format=3 uid="uid://cpqnukvcgvp8c"]
-
-[ext_resource type="Script" uid="uid://bfb3qd327padd" path="res://gameplay/attributes/scripts/derived_stats/ResistancePoisonAttribute.gd" id="1_b42dh"]
-
-[resource]
-script = ExtResource("1_b42dh")
-metadata/_custom_type_script = "uid://bfb3qd327padd"

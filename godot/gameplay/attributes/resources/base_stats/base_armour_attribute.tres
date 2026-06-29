@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="BaseArmourAttribute" load_steps=2 format=3 uid="uid://c7flnm68108ms"]
-
-[ext_resource type="Script" uid="uid://tohaxftwli4l" path="res://gameplay/attributes/scripts/base_stats/BaseArmourAttribute.gd" id="1_kyep7"]
-
-[resource]
-script = ExtResource("1_kyep7")
-metadata/_custom_type_script = "uid://tohaxftwli4l"

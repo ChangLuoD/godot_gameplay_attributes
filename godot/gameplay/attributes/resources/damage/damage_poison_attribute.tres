@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="DamagePoisonAttribute" load_steps=2 format=3 uid="uid://b3prpocl5m0mh"]
-
-[ext_resource type="Script" uid="uid://5c8gb0lbf27t" path="res://gameplay/attributes/scripts/damage/DamagePoison.gd" id="1_jidc0"]
-
-[resource]
-script = ExtResource("1_jidc0")
-metadata/_custom_type_script = "uid://5c8gb0lbf27t"

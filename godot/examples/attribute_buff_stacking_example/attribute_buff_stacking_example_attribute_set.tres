@@ -1,7 +1,0 @@
-[gd_resource type="AttributeSet" load_steps=3 format=3 uid="uid://bqddoilakh0ns"]
-
-[ext_resource type="Attribute" uid="uid://ycgjkjx2alpy" path="res://gameplay/attributes/resources/clamping_stats/max_health_attribute.tres" id="1_1uvsq"]
-[ext_resource type="Attribute" uid="uid://qv58hj03342v" path="res://gameplay/attributes/resources/derived_stats/health_attribute.tres" id="2_kdj1j"]
-
-[resource]
-attributes = Array[AttributeBase]([ExtResource("1_1uvsq"), ExtResource("2_kdj1j")])

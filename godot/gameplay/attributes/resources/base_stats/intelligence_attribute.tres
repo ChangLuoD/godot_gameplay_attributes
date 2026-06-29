@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="IntelligenceAttribute" load_steps=2 format=3 uid="uid://c1uyi5q3bg8tk"]
-
-[ext_resource type="Script" uid="uid://6noi8r71e4dk" path="res://gameplay/attributes/scripts/base_stats/IntelligenceAttribute.gd" id="1_75j04"]
-
-[resource]
-script = ExtResource("1_75j04")
-metadata/_custom_type_script = "uid://6noi8r71e4dk"

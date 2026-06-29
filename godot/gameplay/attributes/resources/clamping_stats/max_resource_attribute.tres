@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="MaxResourceAttribute" load_steps=2 format=3 uid="uid://b3cr7xyst32io"]
-
-[ext_resource type="Script" uid="uid://sxe0o4cfe7gi" path="res://gameplay/attributes/scripts/clamping_stats/MaxResourceAttribute.gd" id="1_he52n"]
-
-[resource]
-script = ExtResource("1_he52n")
-metadata/_custom_type_script = "uid://sxe0o4cfe7gi"

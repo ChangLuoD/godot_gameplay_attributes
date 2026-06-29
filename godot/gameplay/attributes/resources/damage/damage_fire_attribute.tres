@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="DamageFireAttribute" load_steps=2 format=3 uid="uid://cao40qlwo2b86"]
-
-[ext_resource type="Script" uid="uid://b1qcketdra1fo" path="res://gameplay/attributes/scripts/damage/DamageFire.gd" id="1_7d6es"]
-
-[resource]
-script = ExtResource("1_7d6es")
-metadata/_custom_type_script = "uid://b1qcketdra1fo"

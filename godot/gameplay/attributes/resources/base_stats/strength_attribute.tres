@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="StrengthAttribute" load_steps=2 format=3 uid="uid://mnay87w5wtsl"]
-
-[ext_resource type="Script" uid="uid://bmlkaqq50qd0s" path="res://gameplay/attributes/scripts/base_stats/StrengthAttribute.gd" id="1_ck0pe"]
-
-[resource]
-script = ExtResource("1_ck0pe")
-metadata/_custom_type_script = "uid://bmlkaqq50qd0s"

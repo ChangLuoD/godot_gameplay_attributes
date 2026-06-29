@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="ToNextLevelPercentageAttribute" load_steps=2 format=3 uid="uid://csf78laddj2rm"]
-
-[ext_resource type="Script" uid="uid://pv488wbqhuse" path="res://gameplay/attributes/scripts/derived_stats/ToNextLevelPercentageAttribute.gd" id="1_kafan"]
-
-[resource]
-script = ExtResource("1_kafan")
-metadata/_custom_type_script = "uid://pv488wbqhuse"

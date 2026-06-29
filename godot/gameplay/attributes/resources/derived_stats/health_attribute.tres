@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="HealthAttribute" load_steps=2 format=3 uid="uid://qv58hj03342v"]
-
-[ext_resource type="Script" uid="uid://cf5fy10qb4rg4" path="res://gameplay/attributes/scripts/derived_stats/HealthAttribute.gd" id="1_iwp5w"]
-
-[resource]
-script = ExtResource("1_iwp5w")
-metadata/_custom_type_script = "uid://cf5fy10qb4rg4"

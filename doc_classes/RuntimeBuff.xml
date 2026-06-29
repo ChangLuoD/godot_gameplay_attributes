@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="RuntimeBuff" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		A runtime representation of an [AttributeBuff].
+		[AttributeBuff] 的运行时表示。
 	</brief_description>
 	<description>
-		This class is used to represent an [AttributeBuff] at runtime.
-		You can add, remove and find attributes and buffs using this node.
-		[b]Note:[/b] This class is not meant to be instanced manually. Do it at your own risk of causing unexpected behavior.
+		此类用于在运行时表示 [AttributeBuff]。
+		你可以使用此节点添加、移除和查找属性和增益效果。
+		[b]注意：[/b] 此类不应手动实例化。自行实例化可能导致意外行为。
 	</description>
 	<tutorials>
 	</tutorials>
@@ -15,51 +15,51 @@
 			<return type="RuntimeBuff" />
 			<param index="0" name="p_buff" type="AttributeBuff" />
 			<description>
-				Returns an instance of [RuntimeBuff] from an [AttributeBuff].
+				从 [AttributeBuff] 返回 [RuntimeBuff] 的实例。
 			</description>
 		</method>
 		<method name="get_attribute_name" qualifiers="const">
 			<return type="String" />
 			<description>
-				Gets the name of the attribute this buff affects.
+				获取此增益效果影响的属性名称。
 			</description>
 		</method>
 		<method name="get_buff_name" qualifiers="const">
 			<return type="String" />
 			<description>
-				Gets the name of the buff.
+				获取增益效果的名称。
 			</description>
 		</method>
 		<method name="get_duration" qualifiers="const">
 			<return type="float" />
 			<description>
-				Gets the duration of the buff.
+				获取增益效果的持续时间。
 			</description>
 		</method>
 		<method name="get_time_left" qualifiers="const">
 			<return type="float" />
 			<description>
-				Gets the time left for the buff to expire.
+				获取增益效果的剩余时间。
 			</description>
 		</method>
 		<method name="set_time_left">
 			<return type="void" />
 			<param index="0" name="p_value" type="float" />
 			<description>
-				Sets the time left for the buff to expire.
+				设置增益效果的剩余时间。
 			</description>
 		</method>
 		<method name="to_buff" qualifiers="static">
 			<return type="AttributeBuff" />
 			<param index="0" name="p_buff" type="RuntimeBuff" />
 			<description>
-				Returns an instance of [AttributeBuff] from a [RuntimeBuff].
+				从 [RuntimeBuff] 返回 [AttributeBuff] 的实例。
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="buff" type="AttributeBuff" setter="set_buff" getter="get_buff">
-			The buff this runtime buff represents.
+			此运行时增益效果所代表的增益效果。
 		</member>
 	</members>
 </class>

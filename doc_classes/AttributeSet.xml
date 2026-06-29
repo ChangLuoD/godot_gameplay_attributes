@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="AttributeSet" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		A set of attributes.
+		一组属性。
 	</brief_description>
 	<description>
-		This class is used to group [AttributeBase] objects.
+		此类用于分组 [AttributeBase] 对象。
 
-		You can add, remove and find attributes using this node.
+		你可以使用此节点添加、移除和查找属性。
 	</description>
 	<tutorials>
 	</tutorials>
@@ -15,77 +15,77 @@
 			<return type="bool" />
 			<param index="0" name="p_attribute" type="AttributeBase" />
 			<description>
-				Adds an attribute to the set.
+				向集合添加一个属性。
 			</description>
 		</method>
 		<method name="add_attributes">
 			<return type="int" />
 			<param index="0" name="p_attributes" type="AttributeBase[]" />
 			<description>
-				Adds many attributes to the set.
+				向集合添加多个属性。
 			</description>
 		</method>
 		<method name="find_by_classname" qualifiers="const">
 			<return type="AttributeBase" />
 			<param index="0" name="p_classname" type="String" />
 			<description>
-				Finds an attribute by its class name.
+				通过类名查找属性。
 			</description>
 		</method>
 		<method name="find_by_name" qualifiers="const">
 			<return type="AttributeBase" />
 			<param index="0" name="p_name" type="String" />
 			<description>
-				Finds an attribute by its [member AttributeBase.attribute_name].
+				通过 [member AttributeBase.attribute_name] 查找属性。
 			</description>
 		</method>
 		<method name="get_attributes_names" qualifiers="const">
 			<return type="PackedStringArray" />
 			<description>
-				Returns the names of all attributes in the set.
+				返回集合中所有属性的名称。
 			</description>
 		</method>
 		<method name="has_attribute" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="p_attribute" type="AttributeBase" />
 			<description>
-				Returns [code]true[/code] if the set contains the attribute.
+				如果集合包含该属性，返回 [code]true[/code]。
 			</description>
 		</method>
 		<method name="remove_attribute">
 			<return type="bool" />
 			<param index="0" name="p_attribute" type="AttributeBase" />
 			<description>
-				Removes an attribute from the set.
+				从集合中移除一个属性。
 			</description>
 		</method>
 		<method name="remove_attributes">
 			<return type="int" />
 			<param index="0" name="p_attributes" type="AttributeBase[]" />
 			<description>
-				Removes many attributes from the set.
+				从集合中移除多个属性。
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="attributes" type="AttributeBase[]" setter="set_attributes" getter="get_attributes" default="[]">
-			The attributes in the set.
+			集合中的属性。
 		</member>
 		<member name="set_name" type="String" setter="set_set_name" getter="get_set_name" default="&quot;&quot;">
-			The name of the set.
+			集合的名称。
 		</member>
 	</members>
 	<signals>
 		<signal name="attribute_added">
 			<param index="0" name="attribute" type="AttributeBase" />
 			<description>
-				Emitted when an attribute is added to the set.
+				当属性被添加到集合时触发。
 			</description>
 		</signal>
 		<signal name="attribute_removed">
 			<param index="0" name="attribute" type="AttributeBase" />
 			<description>
-				Emitted when an attribute is removed from the set.
+				当属性从集合中被移除时触发。
 			</description>
 		</signal>
 	</signals>

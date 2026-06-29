@@ -1,8 +1,0 @@
-[gd_resource type="AttributeBuff" script_class="ResistanceNerfDueToDifficultyLevelBuff" load_steps=2 format=3 uid="uid://cw8ew2rr8poer"]
-
-[ext_resource type="Script" uid="uid://dq1pkaplie2hx" path="res://gameplay/buffs/scripts/ResistanceNerfDueToDifficultyLevelBuff.gd" id="1_ytbnp"]
-
-[resource]
-queue_execution = 82
-script = ExtResource("1_ytbnp")
-metadata/_custom_type_script = "uid://dq1pkaplie2hx"

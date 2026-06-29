@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="RuntimeAttribute" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		The runtime representation of an [AttributeBase].
+		[AttributeBase] 的运行时表示。
 	</brief_description>
 	<description>
-		This class is used to represent an [AttributeBase] at runtime.
-		You can add, remove and find buffs using this node.
+		此类用于在运行时表示 [AttributeBase]。
+		你可以使用此节点添加、移除和查找增益效果。
 
-		[b]Note:[/b] This class is not meant to be instanced manually. Do it at your own risk of causing unexpected behavior.
+		[b]注意：[/b] 此类不应手动实例化。自行实例化可能导致意外行为。
 	</description>
 	<tutorials>
 	</tutorials>
@@ -16,78 +16,78 @@
 			<return type="bool" />
 			<param index="0" name="p_buff" type="AttributeBuff" />
 			<description>
-				Adds a buff to the attribute.
+				向属性添加一个增益效果。
 			</description>
 		</method>
 		<method name="add_buffs">
 			<return type="int" />
 			<param index="0" name="p_buffs" type="AttributeBuff[]" />
 			<description>
-				Adds many buffs to the attribute.
+				向属性添加多个增益效果。
 			</description>
 		</method>
 		<method name="can_receive_buff" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="p_buff" type="AttributeBuff" />
 			<description>
-				Returns [code]true[/code] if the attribute can receive the buff.
+				如果属性可以接收该增益效果，返回 [code]true[/code]。
 			</description>
 		</method>
 		<method name="clear_buffs">
 			<return type="void" />
 			<description>
-				Removes all buffs from the attribute.
+				移除属性上的所有增益效果。
 			</description>
 		</method>
 		<method name="get_attribute_set" qualifiers="const">
 			<return type="AttributeSet" />
 			<description>
-				Gets the attribute set this attribute belongs to.
+				获取此属性所属的属性集合。
 			</description>
 		</method>
 		<method name="get_buffed_value" qualifiers="const">
 			<return type="float" />
 			<description>
-				Gets the buffed value of the attribute.
+				获取属性的增益值。
 			</description>
 		</method>
 		<method name="get_derived_from" qualifiers="const">
 			<return type="AttributeBase[]" />
 			<description>
-				Gets the attributes this attribute is derived from.
+				获取此属性派生自的属性。
 			</description>
 		</method>
 		<method name="remove_buff">
 			<return type="bool" />
 			<param index="0" name="p_buff" type="AttributeBuff" />
 			<description>
-				Removes a buff from the attribute.
+				从属性移除一个增益效果。
 			</description>
 		</method>
 		<method name="remove_buffs">
 			<return type="int" />
 			<param index="0" name="p_buffs" type="AttributeBuff[]" />
 			<description>
-				Removes many buffs from the attribute.
+				从属性移除多个增益效果。
 			</description>
 		</method>
 		<method name="set_attribute_set">
 			<return type="void" />
 			<param index="0" name="p_value" type="AttributeSet" />
 			<description>
-				Sets the attribute set this attribute belongs to.
+				设置此属性所属的属性集合。
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="attribute" type="Attribute" setter="set_attribute" getter="get_attribute">
-			The [Attribute] this runtime attribute represents.
+			此运行时属性所代表的 [Attribute]。
 		</member>
 		<member name="buffs" type="RuntimeBuff[]" setter="set_buffs" getter="get_buffs" default="[]">
-			The buffs applied to the attribute.
+			应用到属性的增益效果。
 		</member>
 		<member name="value" type="float" setter="set_value" getter="get_value" default="0.0">
-			The value of the attribute.
+			属性的值。
 		</member>
 	</members>
 	<signals>
@@ -96,24 +96,7 @@
 			<param index="1" name="previous_value" type="float" />
 			<param index="2" name="new_value" type="float" />
 			<description>
-				Emitted when the attribute value changes.
-			</description>
-		</signal>
-		<signal name="buff_added">
-			<param index="0" name="buff" type="RuntimeBuff" />
-			<description>
-				Emitted when a buff is added to the attribute.
-			</description>
-		</signal>
-		<signal name="buff_removed">
-			<param index="0" name="buff" type="RuntimeBuff" />
-			<description>
-				Emitted when a buff is removed from the attribute.
-			</description>
-		</signal>
-		<signal name="buffs_cleared">
-			<description>
-				Emitted when all buffs are removed from the attribute.
+				当属性值发生变化时触发。
 			</description>
 		</signal>
 	</signals>

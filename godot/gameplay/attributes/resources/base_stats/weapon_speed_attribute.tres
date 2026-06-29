@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="WeaponSpeedAttribute" load_steps=2 format=3 uid="uid://cyujanpykro6b"]
-
-[ext_resource type="Script" uid="uid://b2djvxmp3yvsr" path="res://gameplay/attributes/scripts/base_stats/WeaponSpeedAttribute.gd" id="1_rot34"]
-
-[resource]
-script = ExtResource("1_rot34")
-metadata/_custom_type_script = "uid://b2djvxmp3yvsr"

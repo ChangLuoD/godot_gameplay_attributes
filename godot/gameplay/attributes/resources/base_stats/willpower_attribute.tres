@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="WillpowerAttribute" load_steps=2 format=3 uid="uid://c1p5v5qaawljl"]
-
-[ext_resource type="Script" uid="uid://c470tlc3e7etj" path="res://gameplay/attributes/scripts/base_stats/WillpowerAttribute.gd" id="1_yqqja"]
-
-[resource]
-script = ExtResource("1_yqqja")
-metadata/_custom_type_script = "uid://c470tlc3e7etj"

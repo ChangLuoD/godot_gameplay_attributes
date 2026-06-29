@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="LevelAttribute" load_steps=2 format=3 uid="uid://ceuy411jav5x6"]
-
-[ext_resource type="Script" uid="uid://cpcvqxsrl3bpq" path="res://gameplay/attributes/scripts/base_stats/LevelAttribute.gd" id="1_hfvix"]
-
-[resource]
-script = ExtResource("1_hfvix")
-metadata/_custom_type_script = "uid://cpcvqxsrl3bpq"

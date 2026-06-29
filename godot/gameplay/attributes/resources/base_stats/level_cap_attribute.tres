@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="LevelCap" load_steps=2 format=3 uid="uid://bs6rc4n107b8f"]
-
-[ext_resource type="Script" uid="uid://buwegb6jr6xt2" path="res://gameplay/attributes/scripts/base_stats/LevelCapAttribute.gd" id="1_gwvwl"]
-
-[resource]
-script = ExtResource("1_gwvwl")
-metadata/_custom_type_script = "uid://buwegb6jr6xt2"

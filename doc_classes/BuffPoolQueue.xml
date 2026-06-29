@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="BuffPoolQueue" inherits="Node" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-		Manages a pool of timed [AttributeBuff].
+		管理定时 [AttributeBuff] 的池。
 	</brief_description>
 	<description>
-		This class is automagically used by [AttributeContainer] to manage a pool of timed [AttributeBuff] objects. 
-		It is used to enqueue and dequeue buffs when they expire.
-		This is why it does not have public methods and members.
+		此类由 [AttributeContainer] 自动用于管理定时 [AttributeBuff] 对象池。
+		它用于在增益效果过期时对其进行入队和出队操作。
+		这就是为什么它没有公共方法和成员。
 	</description>
 	<tutorials>
 	</tutorials>
@@ -14,13 +14,13 @@
 		<signal name="attribute_buff_dequeued">
 			<param index="0" name="buff" type="RuntimeBuff" />
 			<description>
-				Emitted when a buff is dequeued.
+				当增益效果被出队时触发。
 			</description>
 		</signal>
 		<signal name="attribute_buff_enqueued">
 			<param index="0" name="buff" type="RuntimeBuff" />
 			<description>
-				Emitted when a buff is enqueued.
+				当增益效果被入队时触发。
 			</description>
 		</signal>
 	</signals>

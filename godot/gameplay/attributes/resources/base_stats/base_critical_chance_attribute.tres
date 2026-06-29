@@ -1,7 +1,0 @@
-[gd_resource type="Attribute" script_class="BaseCriticalChanceAttribute" load_steps=2 format=3 uid="uid://cdep438qx4g0w"]
-
-[ext_resource type="Script" uid="uid://sluqlicl1fu7" path="res://gameplay/attributes/scripts/base_stats/BaseCriticalChanceAttribute.gd" id="1_pesdj"]
-
-[resource]
-script = ExtResource("1_pesdj")
-metadata/_custom_type_script = "uid://sluqlicl1fu7"
